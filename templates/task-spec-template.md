@@ -15,7 +15,7 @@
 
 | 填写项 | 内容 |
 | :--- | :--- |
-| 目标源码落点 | `<src/kernels/<op>/ \| src/plugins/<engine>/<name>/ \| repos/targets/<repo>（附 export-patch 计划）>` |
+| 目标源码落点 | `<workspace/optimized/kernels/<op>/ \| workspace/optimized/plugins/<engine>/<name>/ \| workspace/source/<repo>（附 export-patch 计划，产物 workspace/ledger/<case>/patches/，不入库）>` |
 | 参考源码路径 | `<repos/refs/<repo>/...（只读，禁止修改）>` |
 
 ## 三、约束与边界

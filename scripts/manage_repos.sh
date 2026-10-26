@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# manage_repos.sh — repos/ 双轨源码目录管理：列表 / 克隆 / 巡检 / 导出补丁
+# manage_repos.sh — 源码仓管理：列表 / 克隆 / 巡检 / 导出补丁
+#   落点：targets（待优化目标工程）→ workspace/source/<name>（不入库）
+#         refs（只读参考底座）→ repos/refs/<name>（严禁修改）
 # 依赖：bash + git + python3（仅用标准库手写解析 manifest，不依赖 PyYAML / yq）
 
 set -euo pipefail
@@ -7,6 +9,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 MANIFEST="$ROOT/repos/manifest.yaml"
+TARGETS_DIR="$ROOT/workspace/source"
+REFS_DIR="$ROOT/repos/refs"
 
 usage() {
   cat <<'EOF'
@@ -14,37 +18,37 @@ usage() {
 
 子命令:
   --list
-      解析 repos/manifest.yaml，分 targets / refs 两段列出 name、branch、
-      本地克隆状态（[✓ 已克隆] / [ ]）与 role。
+       解析 repos/manifest.yaml，分 targets / refs 两段列出 name、branch、
+       本地克隆状态（[✓ 已克隆] / [ ]）与 role。
   clone <name>
-      按 manifest 浅克隆单个仓到 repos/<targets|refs>/<name>
-      （git clone --depth 1 -b <branch>）。
+       按 manifest 浅克隆单个仓：targets 段落到 workspace/source/<name>，
+       refs 段落到 repos/refs/<name>（git clone --depth 1 -b <branch>）。
   clone --targets | clone --refs
-      批量浅克隆该段全部仓库（已存在则跳过）。
+       批量浅克隆该段全部仓库（已存在则跳过）。
   clone <git-url>
-      <git-url> 非 manifest 名称且形如 URL 时，浅克隆到
-      repos/targets/<basename 去掉 .git>（默认分支）。
+       <git-url> 非 manifest 名称且形如 URL 时，浅克隆到
+       workspace/source/<basename 去掉 .git>（默认分支）。
   status
-      巡检 repos/targets 与 repos/refs 下已克隆的独立 Git 仓：目录名、当前分支、
-      最新提交短 hash（git log -1 --format=%h）、未提交改动数
-      （git status --porcelain | wc -l）。refs 段只读，打印但标注"只读"，
-      供 J3 环境冻结记录。
+       巡检 workspace/source（可修改）与 repos/refs（只读）下已克隆的独立
+       Git 仓：目录名、当前分支、最新提交短 hash（git log -1 --format=%h）、
+       未提交改动数（git status --porcelain | wc -l）。refs 段只读，打印但
+       标注"只读"，供 J3 环境冻结记录。
   export-patch <target_repo> <case_name>
-      将 repos/targets/<target_repo> 相对 HEAD 的改动（含已暂存）导出为
-      cases/<case_name>/patches/<repo>-<UTC时间戳>.patch，并同时写入
-      <repo>-<时间戳>.meta.txt（url / branch / base_commit / 生成时间）。
-      导出前会以 intent-to-add（git add -N）方式把新增（untracked）文件
-      一并纳入补丁；补丁用 `git apply -p1` 或 `patch -p1` 施用。
-      无改动时提示并退出非 0。
+       将 workspace/source/<target_repo> 相对 HEAD 的改动（含已暂存）导出为
+       workspace/ledger/<case_name>/patches/<repo>-<UTC时间戳>.patch，并同时
+       写入 <repo>-<时间戳>.meta.txt（url / branch / base_commit / 生成时间）。
+       导出前会以 intent-to-add（git add -N）方式把新增（untracked）文件
+       一并纳入补丁；补丁用 `git apply -p1` 或 `patch -p1` 施用。
+       无改动时提示并退出非 0。
   -h | --help
-      打印本帮助。
+       打印本帮助。
 
 无参数时打印本帮助。
 EOF
 }
 
 # run_py <mode> [args...]：用 python3 标准库解析固定 schema 的 manifest
-#   mode list         —— 打印 --list 输出（含本地克隆状态）
+#   mode list         —— 打印 --list 输出（含本地克隆状态；targets 查 workspace/source/<name>/.git，refs 查 repos/refs/<name>/.git）
 #   mode lookup <n>   —— 命中输出 "section|name|url|branch|role" 退出 0；未命中报错退出 1
 #   mode section <s>  —— 输出该段全部条目 "name<TAB>url<TAB>branch"
 run_py() {
@@ -130,7 +134,10 @@ if MODE == "list":
         w_branch = max(len(data[sec][n]["branch"]) for n in names) + 2
         for n in names:
             e = data[sec][n]
-            git_dir = os.path.join(ROOT, "repos", sec, n, ".git")
+            if sec == "targets":
+                git_dir = os.path.join(ROOT, "workspace", "source", n, ".git")
+            else:
+                git_dir = os.path.join(ROOT, "repos", "refs", n, ".git")
             mark = "[✓ 已克隆]" if os.path.isdir(git_dir) else "[ ]"
             print("  %s%s%s%s" % (n.ljust(w_name), e["branch"].ljust(w_branch),
                                   mark.ljust(9), e["role"]))
@@ -170,11 +177,17 @@ cmd_clone() {
   case "$arg" in
     --targets|--refs)
       local seg="${arg#--}"
-      local entries name url branch target_dir ok=0 fail=0
+      local entries name url branch base_dir target_dir ok=0 fail=0
+      if [ "$seg" = "targets" ]; then
+        base_dir="$TARGETS_DIR"
+      else
+        base_dir="$REFS_DIR"
+      fi
+      mkdir -p "$base_dir"
       entries="$(run_py section "$seg")"
       while IFS=$'\t' read -r name url branch; do
         [ -z "$name" ] && continue
-        target_dir="$ROOT/repos/$seg/$name"
+        target_dir="$base_dir/$name"
         if [ -d "$target_dir/.git" ]; then
           echo "跳过（已存在）: $name"
           continue
@@ -192,7 +205,7 @@ cmd_clone() {
           continue
         fi
       done <<< "$entries"
-      echo "完成：克隆 $ok 个仓库到 repos/$seg/（失败 $fail 个）。"
+      echo "完成：克隆 $ok 个仓库到 ${base_dir}/（失败 $fail 个）。"
       ;;
     *)
       if is_url "$arg"; then
@@ -203,7 +216,8 @@ cmd_clone() {
           echo "错误：无法从 URL 推导出目录名：$arg" >&2
           exit 1
         fi
-        target_dir="$ROOT/repos/targets/$base"
+        mkdir -p "$TARGETS_DIR"
+        target_dir="$TARGETS_DIR/$base"
         if [ -d "$target_dir/.git" ]; then
           echo "跳过（已存在）: $base"
           exit 0
@@ -215,13 +229,19 @@ cmd_clone() {
         echo "克隆 ${base}（默认分支，浅克隆）..."
         git clone --depth 1 "$arg" "$target_dir"
       else
-        local entry seg name url branch role target_dir
+        local entry seg name url branch role base_dir target_dir
         if ! entry="$(run_py lookup "$arg")"; then
           echo "错误：'$arg' 既不在 manifest 中，也不像 Git URL。" >&2
           exit 1
         fi
         IFS='|' read -r seg name url branch role <<< "$entry"
-        target_dir="$ROOT/repos/$seg/$name"
+        if [ "$seg" = "targets" ]; then
+          base_dir="$TARGETS_DIR"
+        else
+          base_dir="$REFS_DIR"
+        fi
+        mkdir -p "$base_dir"
+        target_dir="$base_dir/$name"
         if [ -d "$target_dir/.git" ]; then
           echo "跳过（已存在）: $name"
           exit 0
@@ -230,7 +250,6 @@ cmd_clone() {
           echo "错误：$target_dir 已存在但不是独立 Git 仓。请手动删除或移走该目录后重试（脚本不会自动删除）。" >&2
           exit 1
         fi
-        mkdir -p "$ROOT/repos/$seg"
         echo "克隆 ${name}（branch=${branch}，浅克隆）..."
         git clone --depth 1 -b "$branch" "$url" "$target_dir"
       fi
@@ -239,15 +258,17 @@ cmd_clone() {
 }
 
 cmd_status() {
-  local found=0 sec label name branch short dirty dir
+  local found=0 sec label base_dir name branch short dirty dir
   for sec in targets refs; do
     if [ "$sec" = "targets" ]; then
-      label="目标工程（可修改）"
+      label="目标工程（可修改，workspace/source）"
+      base_dir="$TARGETS_DIR"
     else
-      label="参考底座（只读）"
+      label="参考底座（只读，repos/refs）"
+      base_dir="$REFS_DIR"
     fi
     echo "== $sec / $label =="
-    for dir in "$ROOT/repos/$sec"/*/; do
+    for dir in "$base_dir"/*/; do
       [ -d "$dir" ] || continue
       name="$(basename "$dir")"
       if [ ! -d "$dir/.git" ]; then
@@ -264,7 +285,7 @@ cmd_status() {
   done
   if [ "$found" -eq 0 ]; then
     echo ""
-    echo "暂无可巡检的克隆仓库：repos/targets 与 repos/refs 下尚无带 .git 的独立 Git 仓。"
+    echo "暂无可巡检的克隆仓库：workspace/source 与 repos/refs 下尚无带 .git 的独立 Git 仓。"
     echo "可用 'manage_repos.sh clone --targets' / 'clone --refs' 批量克隆，或 'clone <name>' 单个克隆。"
   fi
 }
@@ -275,9 +296,9 @@ cmd_export_patch() {
     exit 1
   fi
   local repo="$1" case_name="$2"
-  local repo_dir="$ROOT/repos/targets/$repo"
+  local repo_dir="$TARGETS_DIR/$repo"
   if [ ! -d "$repo_dir/.git" ]; then
-    echo "错误：repos/targets/$repo 不存在或不是独立 Git 仓。" >&2
+    echo "错误：workspace/source/$repo 不存在或不是独立 Git 仓。" >&2
     exit 1
   fi
 
@@ -286,7 +307,7 @@ cmd_export_patch() {
 
   # git diff HEAD 同时覆盖已暂存、未暂存与 intent-to-add 的新文件；为空即无改动
   if [ -z "$(git -C "$repo_dir" diff HEAD --binary 2>/dev/null || true)" ]; then
-    echo "repos/targets/$repo 相对 HEAD 无改动（含已暂存与新增文件），无需导出 patch。"
+    echo "workspace/source/$repo 相对 HEAD 无改动（含已暂存与新增文件），无需导出 patch。"
     exit 1
   fi
 
@@ -299,7 +320,7 @@ cmd_export_patch() {
 
   local ts outdir patch_file meta_file base_commit
   ts="$(date -u +%Y%m%dT%H%M%SZ)"
-  outdir="$ROOT/cases/$case_name/patches"
+  outdir="$ROOT/workspace/ledger/$case_name/patches"
   mkdir -p "$outdir"
   patch_file="$outdir/$repo-$ts.patch"
   meta_file="$outdir/$repo-$ts.meta.txt"

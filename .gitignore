@@ -1,8 +1,11 @@
-# === 外部源码目录：子目录各自独立 .git，不跟踪其内部代码（仅保留 .gitkeep）===
-/repos/targets/*
-!/repos/targets/.gitkeep
+# === 只读参考底座（子目录独立 .git，不跟踪其内部代码，仅保留 .gitkeep）===
+#     注：待优化的目标工程源码不在 repos/，而在 workspace/source/（整目录忽略）
 /repos/refs/*
 !/repos/refs/.gitkeep
+
+# === 临时/工作区 ===
+# 工作区：源码/优化后/台账，不入版本控制
+/workspace/
 
 # === 远端同步的第三方技能目录（仅保留 README 说明）===
 /.agents/skills/external/*
