@@ -1,4 +1,4 @@
-# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 3）
+# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 5）
 
 ## 0. 定位与入口导航
 
@@ -9,7 +9,7 @@
 | [docs/](docs/) | 方法论主文：J1→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
 | [repos/](repos/) | `targets/` 待优化目标源码（可改、导出 patch）+ `refs/` 只读参考底座 | J1.5 盘点 / J3 归因 / J4 参考复用 |
 | [src/](src/) | 自研交付：`plugins/`、`kernels/`、`tools/` | 阶梯 3/4 默认落点 |
-| [.agents/skills/](.agents/skills/) | 三层技能：内化核心（7）/ vendored（7）/ external（21） | 按 §7 技能路由表取用 |
+| [.agents/skills/](.agents/skills/) | 仅第三方技能：vendored（7）/ external（21） | 按 §7 技能路由表取用 |
 
 ## 1. J1→J6 阶段路由表
 
@@ -69,21 +69,21 @@
 3. **门禁所有权**：门禁脚本 / 阈值 / 基线由架构师持有并对 Agent **只读**（Agent 无写权限的独立仓或受保护分支），Agent 只交实现与自测，不得改门禁——见 [gates/README.md](gates/README.md)。
 4. 交付必须附从零复现命令与版本信息；「换台机器跑不出同样结果」即视为未通过。
 
-## 7. 技能路由表
+## 7. 知识库与第三方技能路由
 
-| 触发场景 | 技能层 | 取用 |
-| :--- | :--- | :--- |
-| 910B 服务器操作 / 环境核查 / 部署 | 内化核心 | `ascend-910b-server` |
-| msprof 采集与瓶颈归因 | 内化核心 | `ascend-msprof-diagnosis` |
-| 算子优化（Tiling / UB / 流水 / 边界） | 内化核心 | `ascend-kernel-optim` |
-| HCCL / 卡间通信排障 | 内化核心 | `ascend-network-hccl` |
-| GPU→NPU 迁移与图模式（TorchAir / npugraph_ex） | 内化核心 | `ascend-migration-and-graph` |
-| vllm-ascend 模型适配与部署 | 内化核心 | `vllm-ascend-adapter` |
-| 量化与精度 / 性能门禁 | 内化核心 | `ascend-quant-and-gate` |
-| 评测（MMLU / GSM8K 误差预算） | vendored | `evalscope` |
-| KV 远端缓存 / PD 解耦（Mooncake） | vendored | `mooncake-api`、`mooncake-troubleshoot` |
-| 微基准 / Triton 写核 / 精度一致性 / 分布式卡死 | vendored | `kernel-microbenchmark`、`triton-kernel-writing`、`kl-consistency-test`、`debug-distributed-hang` |
-| 专项深挖（算子 / 网络 / 工具 / 引擎） | external | `.agents/skills/external/{operators,network,tooling,engines}/`（21 源，见 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh)） |
+**自研 / 个性化知识 → `docs/`**（方法论主文 + 实操章节）：
+
+| 场景 | 入口 |
+| :--- | :--- |
+| 算子开发与审查 | [docs/01](docs/01-pipeline-and-ledger.md) §`阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）` |
+| 量化与门禁 | [docs/01](docs/01-pipeline-and-ledger.md) §`J6 实操：量化与门禁（msmodelslim + L1/L2/L3 + 探索态/验收态）` |
+| msprof 采集与归因 | [docs/02](docs/02-ascend-diagnosis-sop.md) §`msprof 采集与归因实操（五表 / AICPU / GPU↔NPU 对比）` |
+| HCCL 与通信排障 | [docs/02](docs/02-ascend-diagnosis-sop.md) §`HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）` |
+| 迁移与图模式 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`CUDA→torch_npu 迁移与图模式修复` |
+| vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
+| 主机环境（本机事实） | [AGENTS.md.local](AGENTS.md.local)（**不入版本控制**，缺失时按 §9 探针命令生成或更新） |
+
+**第三方技能 → `.agents/skills/`**：`vendored/`（7，随仓库跟踪）+ `external/`（21，按域同步、内容被 gitignore，见 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh)）。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §第三方技能昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
 ## 8. 脚本速用
 
@@ -92,14 +92,21 @@
 | [manage_repos.sh](scripts/manage_repos.sh) | `--list` / `clone [--targets\|--refs\|<name>]` / `status` / `export-patch <repo> <case>` | 双轨源码仓的克隆、巡检与补丁归档 |
 | [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {operators,network,tooling,engines,all} [--only <name>]` | 从 21 个外部源仓同步 SKILL.md 到 `.agents/skills/external/` |
 
-## 9. 环境事实与红线
+## 9. 主机环境取证
 
-| 项 | 事实 |
-| :--- | :--- |
-| 评测服务器 | `10.19.93.115`（SSH 端口 `22022`，密钥 `~/.ssh/910b_ed25519`，免密；另有 `puaiuc` 账号），主机名 `phy-10-19-93-115`，Ubuntu 24.04 LTS，8×910B3，HBM 64GB/卡，`npu-smi 25.5.1` |
-| 系统与资源 | **192 核**，内存约 **1TB（1005 GB）**；`/data` **14T**（模型落 `/data/ai-stack-models/models`，数据集落 `/data/datasets`） |
-| 硬件代际 | `910B3`（A2/A3）与 `950PR/950DT`（A5 / arch35）；UB 组织、SIMD/SIMT、HiF8/MXFP、CCU 等差异见 [calibration-template.md](templates/calibration-template.md) 代际对照栏 |
-| 卡间拓扑 | 单机 8 卡全互联 = **HCCS**（`npu-smi info -t topo` 实测，非 RoCE）；CPU 亲和绑 0-23/48-71/96-119/144-167 |
-| CANN 版本 | 实测 **CANN 9.0.0-beta.1**（`/usr/local/Ascend/cann` → `cann-9.0.0-beta.1`；`latest/version.cfg` 为空文件，勿靠它取版本）+ 驱动 **25.5.1**（`ascendhal 7.35.23`）；CANN / torch_npu / PyTorch / 驱动（HDK）配套不可混装，**换版本必须重跑校准与复测** |
-| 工具与宿主 | `msprof` / `msprof-analyze` / `atc` / `hccl_test` 等**不在默认 PATH**，须先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`；宿主无 torch / torch_npu，**评测一律走 Docker 容器**（Docker 29.8.0，`/snap/bin/docker`） |
-| 红线 | 禁止引用未核验的硬件数值；`P_eff` / `BW_eff` 一律本机实测后使用；`repos/refs/` 与门禁路径禁写 |
+本机实测值（服务器地址与端口 / CANN 与驱动版本 / 容器与镜像 / 磁盘与模型落点）见 **`AGENTS.md.local`**（**不入版本控制**，缺失时按下列命令生成或更新）。
+
+通用探针命令（换机 / 换版本后重跑，把结果更新进 `AGENTS.md.local`）：
+
+```
+ssh -i ~/.ssh/910b_ed25519 -o IdentitiesOnly=yes -p 22022 root@<服务器IP>
+npu-smi info
+npu-smi info -t topo
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+cat /usr/local/Ascend/driver/version.info
+ls -l /usr/local/Ascend/cann
+docker ps -a
+df -h /data /
+nproc
+free -g
+```

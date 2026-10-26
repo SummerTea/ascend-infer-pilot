@@ -183,3 +183,142 @@ flowchart TD
 | **通信** | `hccl_test`（all_reduce_perf / alltoall_perf）；HCCL env（连接超时 / buffer 大小）；RoCE 探针：`ethtool -S`（rx/tx_prioN_pause、PFC storm 计数）、光模块误码 |
 | **Profiler 权限** | 先跑最小 `msprof op` 探针确认硬件计数器可读（防假活环境）；profiler 采集档位基线与优化版必须一致 |
 | **引擎级旋钮（先于改 kernel）** | vllm-ascend：`--max-num-seqs`、`--max-num-batched-tokens`、`--enable-chunked-prefill`、`--enable-prefix-caching`、`--kv-cache-dtype`、`--attention-backend`、`--tensor-parallel-size`、图捕获分档（`npugraph_ex` 路径）；SGLang-Ascend：`--mem-fraction-static`、`--chunked-prefill-size`、radix cache 开关 |
+
+---
+
+## msprof 采集与归因实操（五表 / AICPU / GPU↔NPU 对比）
+
+对应 L2/L3 层探针的执行细节。工具不在默认 PATH，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`；宿主无 torch / torch_npu，**采集命令一律在 Docker 容器内执行**，产物落共享挂载卷或拷回数据盘；锁频后多轮数据才可比（`npu-smi set -t clock`，具体选项须上机核实）。
+
+### 1. 最小探针（确认 profiler 真活，防假活环境）
+
+```
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"   # --output / --application 等选项以本机 msprof op -h 为准，须上机核实
+```
+
+**完成标准**：`/tmp/probe` 下生成 profile 产物且无权限/驱动报错；若失败先修权限与配套，不进入采集（Step 0.5 前置，见 §4）。
+
+### 2. 端到端采集（L2 时序）
+
+```
+msprof --output=/tmp/llm_trace --application="python3 run_serve_or_step.py"   # 参数以 msprof --help 为准，须上机核实
+```
+
+**完成标准**：产物目录结构完整（含 timeline 数据），可用 MindStudio Insight 打开；采集覆盖 steady-state（跳过 warmup/首轮——首次采集含 JIT/图捕获开销）。
+
+### 3. 算子级微基准（L3 微架构）
+
+```
+msprof op --output=<dir> --application="python3 benchmark_op.py"   # 亦可位置参数形式：msprof op python3 benchmark_op.py
+```
+
+**完成标准**：得到 Top-N 算子耗时/占比/有效带宽；`benchmark_op.py` 必须预热到稳态、输出张量显式零初始化（防 RMW 掩盖）。
+
+### 4. 五表拆解（占比过滤 ≥ 1%）
+
+产出五表：**Kernel**（Top-N 主核）、**通信重叠**（HCCL kernel 与计算轨道重叠度）、**融合模式**（融合算子是否生效）、**下发效率**（Host 下发 vs NPU 执行间隙）、**内存效率**（有效带宽与 `实际字节/bytes_min` 比值）。
+
+**完成标准**：五表齐备，**过滤阈值 = 占比 ≥ 1%**（低于 1% 的算子不进入归因）；Top-N 主核累计覆盖总耗时 ≥ 80% 才有归因基础。
+
+### 5. AICPU 排查
+
+在 timeline/op 产物中过滤 AICPU 算子（控制 CPU 上的搬数/调度/同步），统计其暴露耗时。
+
+**完成标准**：识别出 AICPU 算子名单与各自耗时占比；若 AICPU 占比显著，说明瓶颈在控制面而非 AI Core，归因方向改为下发/同步。
+
+### 6. GPU↔NPU 双 prof 对比（迁移期专用）
+
+```
+msprof-analyze calibrate_npu_gpu --gpu-profile <nsys SQLite> --npu-profile <NPU profile>   # 子命令参数须上机核实
+```
+
+**完成标准**：自动比对 nsys SQLite 与 NPU profile 并产出对照报告（Excel/HTML），定位同一负载在 GPU 与 NPU 上的算子耗时差。
+
+### 7. 气泡 / wait-anchor 定位
+
+在 timeline 中按「NPU busy 区间并集」计算 `Bubble Ratio = NPU 完全空闲时长 / 窗口总时长`（取 busy 区间并集，非各 stream 相加），并锚定空闲段的 wait 原因（等待同步 / 等待下发 / 等待通信）。判定阈值与处理见 §3 瓶颈 3 / §5（**> 20% 为严重下发瓶颈**，优秀系统 < 5%；前提是负载打满）。
+
+**完成标准**：Bubble Ratio 量化（负载打满前提），空闲原因归类。
+
+### 常见坑
+
+1. **忘了 `source set_env.sh`**：`msprof` / `msprof-analyze` 不在默认 PATH，直接调用报 `command not found`。
+2. **用 `time.time()` / `torch.npu.Event` / `do_bench` 报性能**：全部含 Host 开销，口径不可信（见 §2.1 测量铁律），J6 门禁直接打回。
+3. **在宿主跑采集**：宿主无 torch / torch_npu，探针与评测必须进容器。
+4. **五表不做 ≥1% 过滤**：把大量 <1% 的长尾算子纳入归因会稀释主核结论；先按占比排序取 Top-N。
+5. **不锁频、不预热就采集**：多轮数据不可比；首次采集含 JIT/图捕获开销，必须预热到稳态再统计。
+6. **把 ncu/nsys 的 CUDA 名词硬套 NPU**：昇腾无 CUDA event 语义，采集档位基线与优化版必须一致（同档位对比）。
+
+---
+
+## HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）
+
+对应 L4 互联层的执行细节。**先分清拓扑再谈通信排障**——单机卡间互联形态（HCCS / RoCE / PCIe）以 `npu-smi info -t topo` 实测为准（本机拓扑与 CPU 亲和事实见 `AGENTS.md.local`），避免把 HCCS 问题按 RoCE 排查；**跨机**才涉及 RoCE。通信基线须与**同拓扑**历史基线比（偏差 > 10% 先查硬件），不对公开数字比。`hccl_test` / `ascend-dmi` 不在默认 PATH，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
+
+### 1. 拓扑判读（先分清 HCCS / RoCE）
+
+```
+npu-smi info -t topo
+```
+
+**完成标准**：确认卡间两两互联类型（HCCS / RoCE / PCIe）与 CPU 亲和绑定范围；拓扑异常（掉链路/降速）先修硬件再进通信归因。
+
+### 2. hccl_test 基线（对应 nccl-tests）
+
+```
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+all_reduce_perf -b 8 -e 1G -f 2 -g 8   # 二进制名以 hccl_test 实际为准（ls $ASCEND_HOME/tools/hccl_test 确认，可能为 all_reduce_test），须上机核实
+alltoall_perf -b 8 -e 1G -f 2 -g 8    # 可能为 alltoall_test，同上核实
+```
+
+**完成标准**：得到 AllReduce/AlltoAll 的 busbw，与同拓扑存档基线对比；偏差 > 10% 先查链路/亲和/驱动，不进入瓶颈归因。
+
+### 3. 快慢卡三分类
+
+对扩展倒挂的 rank 集做三分类：**Host 下发慢 / 计算慢 / 通信慢**（工具 `cluster-fast-slow-rank-detector`，external network `msagent`）。
+
+| 分类 | 判据 | 处置 |
+| :--- | :--- | :--- |
+| Host 下发慢 | rank 侧 msprof timeline 显示下发间隙（Bubble）集中在特定 rank；CPU 占用高 | 查绑核/NUMA/进程抢占，热路径同步 |
+| 计算慢 | 该 rank 的 `msprof op` 主核耗时偏高 | 查算子/负载倾斜（专家路由统计） |
+| 通信慢 | 该 rank 的 HCCL kernel 耗时/暴露时间偏高，hccl_test 单 rank 异常 | 查链路降速/PFC/小包传输 |
+
+**完成标准**：每个慢 rank 归入三类之一并有 msprof/hccl_test 证据；专家倾斜必须直接看路由统计（SGLang `--expert-distribution-recorder-mode stat`、vLLM EPLB 统计），别只靠 rank 间耗时方差。
+
+### 4. RoCE 拓扑与 PFC/ECN 探针（跨机场景）
+
+```
+ethtool -S <eth> | grep -E "rx_prio[0-7]_pause|tx_prio[0-7]_pause|out_of_buffer|discards_phy"
+ethtool -m <eth>    # 光模块（光功率/温度）
+```
+
+**完成标准**：pause 帧/PFC storm 计数不疯跳；无误码级告警。PFC 反压使通信延迟从 μs 级飙到 ms 级时，查交换机侧 PFC 配置与 ECN（pfcwd），不是换线缆能解决；`SymbolErrorCounter` 高才是物理层误码（换线缆）。
+
+### 5. DeepEP→CAM / NCCL→HCCL 迁移
+
+MoE EP 算子从 DeepEP 迁 CAM（昇腾 EP 算子语义），集合通信从 NCCL 迁 HCCL（转换工具 `deepep-to-cam-converter`，external network `god`）。
+
+**完成标准**：迁移清单明确（通信原语映射：NCCL 集合 → HCCL 对应接口；DeepEP dispatch/combine → CAM 单边语义）；迁移后必跑 `hccl_test` + `msprof` timeline 验证重叠度（exposed_comm 不上升）。
+
+### 6. PD 分离排障（KV 传输）
+
+观测 KV 传输层（LLM-DataDist / Mooncake / LMCache）与 P/D 节点：
+
+```
+# 引擎侧指标（vllm-ascend / SGLang-Ascend）
+#   vllm:nixl_xfer_time_seconds / vllm:nixl_bytes_transferred（若走 NIXL 类通道）
+#   sglang:kv_transfer_speed_gb_s / sglang:kv_transfer_latency_ms（SGLang-Ascend）
+#   Mooncake：MC_TE_METRIC=1 看周期带宽日志
+```
+
+**完成标准**：量化 `exposed_comm = comm_time - overlapped_time` 在 step 关键路径占比；KV page 逐块拷贝被延迟主导 → 攒批合并为连续大块（MB 级才接近峰值）；传输层慢 → 查 RDMA 计数器/误码/降速。判据口径见 §3 瓶颈 4（「通信总耗时 > 25%」被计算覆盖**不是**瓶颈）。
+
+### 常见坑
+
+1. **把单机 HCCS 当 RoCE 排查**：互联形态先 `npu-smi info -t topo` 判读再选探针；RoCE 只出现在跨机。
+2. **忘了 `source set_env.sh`**：`hccl_test` / `all_reduce_perf`（二进制名以 hccl_test 实际为准，须上机核实）不在默认 PATH，直接调用报 `command not found`。
+3. **直接对公开带宽数字比**：busbw 必须与**同拓扑**历史基线比；低于基线 10% 以上先查链路/NUMA/亲和。
+4. **只靠 rank 间耗时方差判断专家倾斜**：热门专家倾斜须直接看路由统计，耗时方差只能作辅证。
+5. **KV page 逐块拷贝**：小包传输被延迟主导（KB 级远低于峰值），应攒批/合并为连续大块再传。
+6. **PFC 反压误判为物理层误码**：`rx_prioN_pause` / pause storm 是拥塞信号（查交换机 PFC/ECN），`SymbolErrorCounter` 高才是物理层误码（换线缆）。

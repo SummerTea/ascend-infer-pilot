@@ -25,3 +25,6 @@ __pycache__/
 .venv/
 .codegraph/
 *.log
+
+# === 本机环境说明（不入库）===
+AGENTS.md.local

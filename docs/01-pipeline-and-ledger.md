@@ -2,7 +2,7 @@
 
 > **定位**：J1→J6 决策流水线全景、J2 双约束物理账本（核心公式）、J4 干预五阶梯 ROI 树。
 > **配套**：[门禁规则](../gates/README.md) ｜ [任务书模板](../templates/task-spec-template.md) ｜ [诊断 SOP](02-ascend-diagnosis-sop.md) ｜ [硬件与引擎](03-ascend-hardware-and-engines.md) ｜ [技能目录](04-skill-catalog-and-maintenance.md)
-> **适用硬件**：昇腾 **910B3（A2/A3）** 与 **950PR/950DT（A5/arch35）**；评测机 `10.19.93.115:22022`（8×910B3，HBM 64GB/卡，`npu-smi 25.5.1`）。
+> **适用硬件**：昇腾 **910B3（A2/A3）** 与 **950PR/950DT（A5/arch35）**；评测机主机事实（登录方式 / 卡型 / HBM / 工具版本）见 `AGENTS.md.local`（不入库）。
 
 ---
 
@@ -39,7 +39,7 @@ flowchart LR
 
 | 维度 | 必须冻结的内容 | 昇腾侧要点 |
 | :--- | :--- | :--- |
-| **硬件上下文** | 芯片代际（910B3 / 950PR / 950DT）、当前精度理论峰值与可达上限、HBM 容量与带宽、卡间拓扑（RoCE / HCCS / PCIe）与跨 NUMA 位置 | 8×910B3 单机：HBM 64GB/卡；`npu-smi info` 确认 8 卡健康、`npu-smi info -t topo` 确认 HCCS 拓扑 |
+| **硬件上下文** | 芯片代际（910B3 / 950PR / 950DT）、当前精度理论峰值与可达上限、HBM 容量与带宽、卡间拓扑（RoCE / HCCS / PCIe）与跨 NUMA 位置 | 8×910B3 单机：`npu-smi info` 确认 8 卡健康、`npu-smi info -t topo` 确认 HCCS 拓扑（本机 HBM 容量/带宽与工具版本见 `AGENTS.md.local`） |
 | **模型结构特征向量** | 注意力族（MHA/GQA/MLA/线性稀疏）、核心几何（H、n_h、n_kv、d）、前馈形态（Dense / MoE：E、K、共享专家、门控）、数值格式（BF16 / FP8 / HiF8 / MXFP4 / MXFP8，Scale 粒度）、外部结构（Engram、MTP） | 950 新增 **HiF8 / MXFP4 / MXFP8** 原生数据类型；910B3 仅有 INT8/FP16/BF16 与低比特量化路径（msmodelslim / ATB 量化解码） |
 | **负载分布** | 序列长度 P50/P95/P99（S_in / S_out）、并发与到流模式（Batch=1 / 32 / 128、均匀 vs 突发）、前缀重合率 | 前缀命中率高 → 在 J4 前置选项里优先考虑前缀亲和路由 / KV 分层（Mooncake / LMCache 昇腾适配层） |
 | **SLO 与目标指标** | TTFT 上限（ms）、TPOT 上限（ms/token）、SLO 达标下 Goodput（RPS 或 tok/s）、探索态 vs 验收态目标 | 门禁以 `P_eff` / `BW_eff` 为分母；验收目标来自 J2 下界而不是拍脑袋 |
@@ -229,3 +229,148 @@ flowchart TD
 | J2 物理不可达 | 回 **J1** 重谈 SLO（或走「修订 SLO」选项） |
 | J3 归因到默认配置瓶颈 | 先做 J3.0 配置粗扫，把「最佳已知配置」固化为基线 |
 | 改造涉及共享路径 | J6 轨道 B 回归抽检 ≥1 Dense + 1 MoE + 1 长上下文 |
+
+---
+
+## 阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）
+
+针对 J4 阶梯 4「专用 Kernel 移植与开发」的算子实现、审查与交付。动手前必读 [AGENTS.md](../AGENTS.md) §5 五不准红线与 [任务书模板](../templates/task-spec-template.md)（两阶段交付、方案评审先行）。参考实现一律读 `repos/refs/<repo>/`（只读），交付落 `src/kernels/`；**环境与配套版本事实见 `AGENTS.md.local`**（本机 CANN / torch_npu / 驱动版本）。
+
+### 1. 读参考实现（J4 前先读再算）
+
+在 `repos/refs/` 找同结构参考（数据布局、向量化载入、Tiling 逻辑）；先 `bash scripts/manage_repos.sh clone <name>`。
+
+**完成标准**：能说出参考实现的 UB/Tile 划分与边界处理，并明确本次定制的差异点（否则不应启动阶梯 4）。
+
+### 2. UB 预算核算
+
+按 910B 的 `16 group × 3 × 4KB = 192KB/核` 规划 Tile：主算 Buffer + 双缓冲 + 标量/搬数 buffer 合计**不得超过 192KB/核**；非整除 Tile 必须预留边界处理（mask/拷贝）。**950 为 `8 group × 2 × 16KB`，Bank 冲突规则重写，不得沿用 910B 规划**（950 场景先仿真 cannsim 再上真机）。
+
+**完成标准**：写出「输入 Buffer + 输出 Buffer + 双缓冲副本 + 临时」的字节账目，总占用 ≤ 192KB/核且有安全边际。
+
+### 3. 选型 DSL
+
+| 候选 | 适用 | 要点 |
+| :--- | :--- | :--- |
+| **AscendC** | 底层算子、达芬奇 Cube/Vector 异构模型 | 双缓冲流水、`__ubuf__` 组织、精度与边界显式控制 |
+| **Triton-Ascend** | 从 Triton 迁移/快速原型 | **`num_warps` / `num_stages` 在昇腾不可用**（无对应语义，误设不生效或报错）；核类型须匹配 |
+| **TileLang-Ascend** | 高级 Tile 编程、编译器 Pass 直达 | 仓库分支 `ascendc_pto`（`repos/targets/tilelang-ascend/`）；`tilelang-perf-optimization` 强制 `msprof op` 度量 |
+| **CATLASS** | 矩阵乘模板库 | **非 CUTLASS 移植**（达芬奇 Cube/Vector 异构模型不同） |
+
+**完成标准**：选定一种并给出理由（结构匹配/生态成熟度/维护成本），在任务书中声明落点。
+
+### 4. 编码与 P0-P2 自查
+
+| 级 | 内容 | 处置 |
+| :--- | :--- | :--- |
+| **P0** | 非整除 Tile 下 `mask=` 缺失/错位导致越界或静默错值；访存偏移越界 | 零容错，直接打回 |
+| **P1** | 低精度累加（`tl.sum(x_fp16)` 默认保持输入精度，必须 `tl.sum(x.to(tl.float32))`）；核类型错配；热路径隐式同步 | 必须修 |
+| **P2** | 双 pass 反模式（可慢 5×）、Tile/wave 量化、UB 流水编排、`num_warps` / `num_stages` 误用 | 建议修（性能向） |
+
+**完成标准**：P0 项零残留；P1/P2 项全部说明处置；五不准红线未命中（AGENTS.md §5）。
+
+### 5. mssanitizer 检查
+
+```
+mssanitizer --check=memcheck,racecheck,initcheck,synccheck --output=/tmp/san <运行命令>   # 子命令参数以 --help 为准，须上机核实
+```
+
+**完成标准**：memcheck（越界/未初始化）/ racecheck（数据竞争）/ initcheck（初始化顺序）/ synccheck（同步语义）四项通过或问题清单清零。
+
+### 6. 交付物：test_op.py + benchmark_op.py
+
+- `test_op.py`：覆盖规整 shape + 非对齐边界 shape（非 128 对齐、Batch=1、极端短/长序列）；余弦 + 最大/相对误差**双指标**，阈值按 [门禁规则](../gates/README.md) L2 档。
+- `benchmark_op.py`：用 `msprof op` 出微基准与 UB/带宽利用率，对比基线加速比（口径见 [诊断 SOP §2.1](02-ascend-diagnosis-sop.md)）。
+
+**完成标准**：L2 双指标在噪声底内；`msprof op` 报告有效带宽/加速比；J6 轨道 B 按 [门禁规则](../gates/README.md) 验收。
+
+### 关键命令与判定表
+
+| 主题 | 命令/工具 | 判定 |
+| :--- | :--- | :--- |
+| 算子微基准 | `msprof op --output=<dir> --application="python3 benchmark_op.py"` | 报耗时/有效带宽/加速比 |
+| 审查分级 | — | P0 零容错；P1 必须修；P2 建议修 |
+| 精度门禁 | `torch.testing.assert_close(actual, expect, rtol=..., atol=...)` | 余弦 + 最大/相对误差双指标 |
+| 越界/竞争 | `mssanitizer --check=memcheck,racecheck,initcheck,synccheck` | 四项通过 |
+
+### 常见坑
+
+1. **`num_warps` / `num_stages` 在昇腾不可用**：这两个 Triton 参数在 Ascend 路径无对应语义，误设不生效或报错；改用 AscendC 双缓冲/Tile 参数表达流水。
+2. **核类型错配**：算子被分派到错误的核（Cube vs Vector），性能断崖式下降——审查 kernel 声明与调用处的核类型匹配。
+3. **归约升精度缺失**：`tl.sum` / `tl.reduce` 对 fp16/bf16 输入默认保持输入精度累加（红线 4），必须显式 `tl.sum(x.to(tl.float32), axis=...)`；`tl.dot` 默认 fp32 累加无此问题。
+4. **双 pass 反模式**：同一数据流拆成两个 kernel 反复读写 HBM，实测可慢 5×——优先垂直融合为单次 launch。
+5. **把 910B 的 UB/Bank 规划平移给 950**：950 是 `8 group × 2 × 16KB`，Bank 冲突规则重写；950 场景先仿真（cannsim 仅支持 950）再上真机。
+6. **访存边界只测规整 shape**：红线 5（测试弱化）；必须覆盖非 128 对齐、Batch=1、极端短/长序列。
+
+---
+
+## J6 实操：量化与门禁（msmodelslim + L1/L2/L3 + 探索态/验收态）
+
+J6 双轨门禁的昇腾落地：轨道 A 正确性（L1/L2/L3 三级）+ 轨道 B 性能（探索态/验收态）。**门禁脚本/阈值/基线由架构师持有并对 Agent 只读**（[门禁规则](../gates/README.md)）；Agent 只交实现与自测，不得改门禁。量化/性能结论**硬绑定环境**——换 CANN / torch_npu / 芯片（910B3 vs 950）必须重跑校准与复测（本机配套版本见 `AGENTS.md.local`）。
+
+### 1. msmodelslim 量化流程
+
+- `model-adapt`：模型接入与算子适配（HF/本地模型 → 昇腾量化可处理形态）。
+- `evaluate`：量化门禁——目标值 + 容差判定，**禁止改评测口径**，0 分自愈链。
+- `tuning`：自动量化调优（档位搜索 + EP 并行）。
+
+参考底座 `repos/refs/msmodelslim/`（只读，先 `bash scripts/manage_repos.sh clone <name>`）。
+
+**完成标准**：导出量化权重（含 scale/zero-point 齐全）；`evaluate` 在目标容差内通过；`tuning` 记录档位与 EP 并行配置。
+
+### 2. 定级门禁路径（先定路径再定阈值）
+
+| 路径 | 门禁档 | 说明 |
+| :--- | :--- | :--- |
+| 融合 / 重排 / 平替 Kernel（数学等价） | **L1 逐位一致** | 同配置重跑逐位比对（含跨配置 md5 抽查） |
+| 单算子级 / 引擎等价替换（bf16/fp16/fp8 基准） | **L2 数值门** | 余弦 + 最大/相对误差**双指标并用** |
+| 量化 / KV 压缩（有损） | **L3 有损门** | 下游任务误差预算制，禁「零误差」标准 |
+
+阈值语义与容差表见 [门禁规则](../gates/README.md) 二；**完成标准**：明确当前改动落 L1/L2/L3 哪一档，并在任务书/门禁记录中声明判据。
+
+### 3. L2 数值门执行
+
+```
+torch.testing.assert_close(actual, expect, rtol=..., atol=...)   # 按 dtype 理论浮点容差设定
+```
+
+**完成标准**：余弦相似度 + 最大/相对误差**双指标并用**（余弦对整体幅度不敏感，**不可单用**）；改造后落在「正确实现相对 golden 的偏差噪声底」内。
+
+### 4. L3 有损门执行（评测工具）
+
+用 evalscope（或 AISBench）打 vllm-ascend 的 OpenAI 兼容端点评测 MMLU / GSM8K：evalscope 可打任意 OpenAI 兼容端点（vllm-ascend 直接可用）；AISBench 为昇腾官方评测；具体子命令以当前版本为准，须上机核实。
+
+**完成标准**：任务阈值按**任务与评测噪声**校准（多次运行 + 置信区间），不用「综合得分掉点 ≤ 1.0%」这类跨任务一刀切；**禁止「零误差」标准**。
+
+### 5. 探索态 → 验收态（轨道 B 性能门禁）
+
+- **探索态**：开发分支快速迭代，同窗 A/B（同并行度 / 同 batch / 同 shape / 同图分桶）验证方向；数据**不得入库**。
+- **验收态**：冻结环境（版本快照）+ 门禁在干净容器/CI 独立执行，固定权重/数据集；附从零复现命令；**通过后才允许入库**。
+
+**完成标准**：相对基线收益 ≥ 预估收益 80%（禁止 J2 物理下界作分母）；开环负载 Goodput 达标（P95 TTFT/TPOT）；验收态报告与版本快照归档 `cases/<case>/gates/`。
+
+### 6. 环境硬绑定复测
+
+记录 CANN / torch_npu / PyTorch / 驱动 / 引擎 commit 快照；任何一项变更后重跑校准与门禁。
+
+**完成标准**：版本快照与门禁结果随报告归档；「换台机器跑不出同样结果」即未通过。
+
+### 关键命令与判定表
+
+| 检查项 | 工具/命令 | 判定 |
+| :--- | :--- | :--- |
+| 量化流程 | msmodelslim `model-adapt` / `evaluate` / `tuning` | evaluate 在目标容差内通过 |
+| L1 | 同配置重跑逐位比对 | 逐位一致（不要求长生成 100% 逐字吻合作硬门禁） |
+| L2 | `torch.testing.assert_close` | 余弦 + 最大/相对误差双指标在噪声底内 |
+| L3 | evalscope / AISBench 评测 MMLU / GSM8K | 任务误差预算内（按评测噪声校准） |
+| 性能门禁 | `msprof op` / 压测 | 收益 ≥ 预估 80%；探索态数据不得入库 |
+| 版本快照 | 记录 CANN/torch_npu/驱动/引擎 commit | 换版本必须复测 |
+
+### 常见坑
+
+1. **把「100% 逐字吻合」当 L1 硬门禁**：bf16 下归约顺序一变 logits 就抖 ~1e-3，长生成必现个别 top-1 翻转，该门禁不可稳定通过——L1 语义是「数学等价路径的最低档」，正确实现也可能有噪声底。
+2. **L2 单用余弦**：余弦对整体幅度不敏感，必须与最大/相对误差**双指标并用**；logprob 指标用 `mean |Δlogp|` / top-k KL，不用平均相对偏差（logp 接近 0 时分母爆炸）。
+3. **L3 用「零误差」或跨任务一刀切**：有损路径必须下游任务误差预算制，阈值按任务与评测噪声校准。
+4. **用探索态数据入库**：只有**验收态**（冻结环境 + 干净容器独立执行 + 完整复现链）才能入库；探索态 A/B 只作参考。
+5. **换版本不复测**：量化/性能结论硬绑定 CANN / torch_npu / 芯片，换任一必须重跑校准与门禁（最高风险项）。
+6. **门禁脚本可被交付方改写**：所有权必须分离（架构师持有、Agent 只读）；任务书中声明门禁路径禁写。

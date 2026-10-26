@@ -22,6 +22,8 @@
 
 ## 快速启动工作流（5 步）
 
+> 前置：核对 [AGENTS.md.local](AGENTS.md.local)（主机环境说明，**不入库**）；缺失或换机/换版本时按 [AGENTS.md §9](AGENTS.md) 探针命令重跑并更新。
+
 1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（拉取 21 个外部源仓的 SKILL.md 到 `.agents/skills/external/`）。
 2. **克隆目标源码**：`scripts/manage_repos.sh clone --targets && scripts/manage_repos.sh clone --refs`（按 [repos/manifest.yaml](repos/manifest.yaml) 浅克隆）。
 3. **读方法论**：先读 [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md)（J1→J6 主线），诊断类任务加读 [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md)。
@@ -42,14 +44,15 @@
 
 | 目录 | 内容 | 说明 |
 | :--- | :--- | :--- |
-| [docs/](docs/) | 方法论 01~04 | J1→J6 方法论与昇腾知识库（01 流水线与账本 / 02 诊断 SOP / 03 硬件与引擎 / 04 技能目录） |
+| [docs/](docs/) | 方法论 01~04 + 自研知识实操章节 | **自研 / 个性化知识一律在 `docs/`**（01 流水线与账本 / 02 诊断 SOP / 03 硬件与引擎 / 04 技能目录；实操章节路由见 [AGENTS.md §7](AGENTS.md)） |
 | [gates/](gates/README.md) | 双轨门禁规则与所有权 | 门禁由架构师持有，Agent 只读 |
 | [templates/](templates/) | 任务书 / PMR / 校准台账 | 派发与记录模板 |
+| [AGENTS.md.local](AGENTS.md.local) | 主机环境说明（**不入库** / 本机事实） | 服务器地址与端口、CANN/驱动版本、容器与镜像、磁盘与模型落点；缺失时按 [AGENTS.md §9](AGENTS.md) 探针命令生成 |
 | [repos/](repos/README.md) | `targets/`（可改）+ `refs/`（只读）双轨源码 | 各自独立 git；清单见 `manifest.yaml` |
 | [src/](src/README.md) | `plugins/` `kernels/` `tools/` 自研交付 | 根仓库直接跟踪 |
 | [scripts/](scripts/) | `manage_repos.sh` / `sync_ascend_skills.sh` | 源码与技能管理 |
 | [cases/](cases/) | 案例落点：patch / 基线 / PMR / 门禁报告 | 每案例一目录 |
-| [.agents/skills/](.agents/skills/) | 三层技能：内化核心（7）/ vendored（7）/ external（21） | 路由规则见 [AGENTS.md §7](AGENTS.md) |
+| [.agents/skills/](.agents/skills/) | **仅第三方技能**：`vendored/`（7，随仓库跟踪）+ `external/`（21，按域同步、内容被 gitignore） | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
 
 ## 源码仓挂载（manage_repos.sh）
 
@@ -64,7 +67,7 @@
 
 `scripts/sync_ascend_skills.sh --category all` 从 21 个外部源仓（operators / network / tooling / engines 四类）自动发现并同步 SKILL.md 技能到 `.agents/skills/external/<category>/<name>/`。
 
-- `.agents/skills/external/` 被 [.gitignore](.gitignore) 忽略（仅保留 README.md），不会污染根仓库；**vendored/ 与内化核心（7+7）受根仓库跟踪**，随工程版本化。
+- `.agents/skills/external/` 被 [.gitignore](.gitignore) 忽略（仅保留 README.md），不会污染根仓库；**vendored/（7）受根仓库跟踪**，随工程版本化。
 - `--list` 离线查看源表（url/branch 已联网核验，勿改分支）；`--only <name>` 定向重同步。
 
 ## 文档导航
@@ -74,8 +77,10 @@
 | [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md) | J1→J6 方法论主文：阶段路由、双约束账本、五阶梯决策、五不准红线、双轨门禁 |
 | [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md) | 昇腾四瓶颈诊断 SOP：msprof 采集、归因阈值、火焰图 / 五表证据 |
 | [docs/03-ascend-hardware-and-engines.md](docs/03-ascend-hardware-and-engines.md) | 昇腾硬件代际物理规格（910B vs 950）与引擎扩展挂载点 |
-| [docs/04-skill-catalog-and-maintenance.md](docs/04-skill-catalog-and-maintenance.md) | 技能全景、NVIDIA↔昇腾工具对照与维护计划（换版本复测触发） |
+| [docs/04-skill-catalog-and-maintenance.md](docs/04-skill-catalog-and-maintenance.md) | 技能全景、NVIDIA↔昇腾工具对照、第三方技能昇腾相关性评估与维护计划（换版本复测触发） |
 | [gates/README.md](gates/README.md) | 门禁所有权 + 数值语义容差表（L1 / L2 / L3 / 探索态-验收态） |
 | [templates/task-spec-template.md](templates/task-spec-template.md) | 昇腾化性能实验任务书（必填源码落点与参考路径） |
 | [templates/pmr-log-template.md](templates/pmr-log-template.md) | Predict / Measure / Review 三段式实验日志（msprof 证据） |
 | [templates/calibration-template.md](templates/calibration-template.md) | NPU 硬件基线校准台账（环境冻结 / 代际对照 / 复测触发） |
+
+> docs 新增实操章节：docs/01 §阶梯 4 实操：算子开发与审查、§J6 实操：量化与门禁；docs/02 §msprof 采集与归因实操、§HCCL 与通信排障实操；docs/03 §CUDA→torch_npu 迁移与图模式修复、§vllm-ascend 接入与融合算子替换；docs/04 §第三方技能昇腾相关性评估。取用路由见 [AGENTS.md §7](AGENTS.md)。

@@ -17,7 +17,7 @@
 
 - **msprof 采集命令**：
   - 端到端：`<msprof --application="..." --output=/msprof_out/<case>/...>`
-  - 算子微基准：`<msprof op --operator=...>`
+  - 算子微基准：`<msprof op --application="python3 benchmark_op.py">`（`msprof op` 选项以本机 `msprof op -h` 为准，须上机核实）
 - **采集产物路径**：`<绝对路径 / cases/<case>/profiling/...>`（随 PMR 一并归档）
 - **实测最终数据**：`<相对 P_eff / BW_eff，如实测 TPOT = 26ms，BW_util = 63%>`
 - **原瓶颈消除证据**：msprof 火焰图 / 五表（Kernel / 通信重叠 / 融合模式 / 下发效率 / 内存效率）摘录，说明原瓶颈 X 耗时下降比例。

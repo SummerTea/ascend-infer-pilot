@@ -43,7 +43,7 @@
 ## 六、msprof 采集命令与产物路径
 
 - 端到端：`msprof --application="<命令>" --output=<路径>` → 产物 `<性能剖析文件路径>`。
-- 算子微基准：`msprof op --operator=<算子名>` → 产物 `<msprof op 报告路径>`。
+- 算子微基准：`msprof op --application="python3 benchmark_op.py"` → 产物 `<msprof op 报告路径>`（`msprof op` 选项以本机 `msprof op -h` 为准，须上机核实）。
 - 产物统一归档到 `cases/<case>/profiling/`，随 [PMR](../templates/pmr-log-template.md) 一并留存。
 
 ## 七、复测触发条件
