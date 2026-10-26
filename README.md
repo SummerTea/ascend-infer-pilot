@@ -14,7 +14,7 @@
 
 | 术语 | 约定 |
 | :--- | :--- |
-| 阶段链 | `J1 目标定义` → `J1.5 引擎能力盘点` → `J2 物理上限核算` → `J3 基线归因` → `J4 干预决策` → `J5 任务书交付` → `J6 双轨门禁` |
+| 阶段链 | `J0 定焦` → `J1 目标定义` → `J1.5 引擎能力盘点` → `J2 物理上限核算` → `J3 基线归因` → `J4 干预决策` → `J5 任务书交付` → `J6 双轨门禁` |
 | 干预五阶梯 | `阶梯 1 配置与编排调优` / `阶梯 2 已有成熟后端切换` / `阶梯 3 Out-of-tree 插件扩展` / `阶梯 4 专用 Kernel 移植与开发` / `阶梯 5 底层引擎内核重写与 Fork` |
 | 双约束 | `P_eff`（算力可达上限）/ `BW_eff`（带宽可达上限）/ `B* = P_eff / BW_eff` / `MFU_eff` / `BW_util` |
 | 测量铁律 | 只信 `msprof` / `msprof op`；禁用 `time.time()`、`torch.npu.Event`、`do_bench` |
@@ -40,6 +40,8 @@
 | 量化改造 | J2 账本 → J6 | [任务书](templates/task-spec-template.md) + L3 有损门（evalscope） |
 | 算子开发（阶梯 4） | J4 决策 → J5 | [任务书](templates/task-spec-template.md) + `test_op.py` / `benchmark_op.py` |
 | 网络 / HCCL 排障 | J3 直接定位 | [诊断 SOP](docs/02-ascend-diagnosis-sop.md) |
+
+> **上表列的是「主攻阶段」，不是「可跳过 J0」**：任一入口都须先有 J0 定位卡（`workspace/<scenario-id>/ledger/01-triage.md`），否则不得进入 J4/J5。
 
 ## 目录地图
 
@@ -79,7 +81,7 @@
 | [docs/03-ascend-hardware-and-engines.md](docs/03-ascend-hardware-and-engines.md) | 昇腾硬件代际物理规格（910B vs 950）与引擎扩展挂载点 |
 | [docs/04-skill-catalog-and-maintenance.md](docs/04-skill-catalog-and-maintenance.md) | 技能全景、NVIDIA↔昇腾工具对照、第三方技能昇腾相关性评估与维护计划（换版本复测触发） |
 | [docs/05-case-library-and-ledger.md](docs/05-case-library-and-ledger.md) | 场景/条目两层定义 + 台账与工作区规范 |
-| [docs/06-bottleneck-triage.md](docs/06-bottleneck-triage.md) | J0 定焦 SOP：三环漏斗、硬出口四条件、熔断升级（另一 lane 落地中） |
+| [docs/06-bottleneck-triage.md](docs/06-bottleneck-triage.md) | J0 定焦 SOP：三环漏斗、硬出口四条件、熔断升级 |
 | [gates/README.md](gates/README.md) | 门禁所有权 + 数值语义容差表（L1 / L2 / L3 / 探索态-验收态） |
 | [templates/task-spec-template.md](templates/task-spec-template.md) | 昇腾化性能实验任务书（必填源码落点与参考路径） |
 | [templates/pmr-log-template.md](templates/pmr-log-template.md) | Predict / Measure / Review 三段式实验日志（msprof 证据） |
