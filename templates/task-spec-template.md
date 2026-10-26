@@ -1,4 +1,4 @@
-# 【性能工程实验任务书】（昇腾版）—— `<case 名称>` / `<日期>`
+# 【性能工程实验任务书】（昇腾版）—— `<scenario-id>` / `<日期>`
 
 > 填写本模板时，凡涉及 `P_eff` / `BW_eff` / `MFU_eff` / `BW_util` 的数值必须来自 [校准台账](../templates/calibration-template.md) 的本机实测值，**禁止用理论峰值**。红线见 [AGENTS.md](../AGENTS.md) §5。
 
@@ -15,7 +15,7 @@
 
 | 填写项 | 内容 |
 | :--- | :--- |
-| 目标源码落点 | `<workspace/optimized/kernels/<op>/ \| workspace/optimized/plugins/<engine>/<name>/ \| workspace/optimized/tools/<tool>/ \| workspace/source/<repo>（附 export-patch 计划，产物 workspace/ledger/<case>/patches/，不入库）>` |
+| 目标源码落点 | `<workspace/<scenario-id>/optimized/kernels/<op>/ \| workspace/<scenario-id>/optimized/plugins/<engine>/<name>/ \| workspace/<scenario-id>/optimized/tools/<tool>/ \| workspace/<scenario-id>/source/<repo>（附 export-patch 计划，产物 workspace/<scenario-id>/ledger/patches/，不入库）>` |
 | 参考源码路径 | `<repos/refs/<repo>/...（只读，禁止修改）>` |
 
 ## 三、约束与边界

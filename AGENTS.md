@@ -1,4 +1,4 @@
-# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 6）
+# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 7）
 
 ## 0. 定位与入口导航
 
@@ -8,20 +8,20 @@
 | :--- | :--- | :--- |
 | [docs/](docs/) | 方法论主文：J1→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
 | [repos/](repos/) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | J1.5 盘点 / J3 归因 / J4 参考复用 |
-| `workspace/` | **不入库**：`source/` 待优化源码 + `optimized/` 自研交付 + `ledger/` 台账 | J4/J5 落点 / J6 过程留痕 |
+| `workspace/` | **不入库**：`<scenario-id>/`（`source/` + `optimized/` + `ledger/`）+ `_shared/calibration.md` | J4/J5 落点 / J6 过程留痕 |
 | [.agents/skills/](.agents/skills/) | 仅第三方技能：vendored（7）/ external（21） | 按 §7 技能路由表取用 |
 
 ## 1. J1→J6 阶段路由表
 
 | 阶段 | 目标 | 产出物 | 交付落点 | 参考文档锚点 |
 | :--- | :--- | :--- | :--- | :--- |
-| J1 目标定义 | 冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/ledger/<case-id>/00-scope.md`（案例 md 仅在过验收态门禁后由 Agent 沉淀，见 §6.5） | [01](docs/01-pipeline-and-ledger.md) |
-| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前 | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/source/<engine>/`（盘点现有能力，只读阅读）；gap 清单落 `workspace/ledger/<case-id>/00-scope.md` | [01](docs/01-pipeline-and-ledger.md) |
-| J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/ledger/<case-id>/02-baseline-ledger.md` | [01](docs/01-pipeline-and-ledger.md) |
-| J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/ledger/<case-id>/iterations/` | [02](docs/02-ascend-diagnosis-sop.md) |
-| J4 干预决策 | 五阶梯按 ROI 排序，**动手前声明源码落点** | 决策记录 + 落点声明 | `workspace/optimized/` 或 `workspace/source/<engine>/` | [01](docs/01-pipeline-and-ledger.md) |
-| J5 任务书交付 | 两阶段：方案评审 → 实现自测 | 任务书 + `test_op.py` / `benchmark_op.py` | `workspace/optimized/plugins\|kernels\|tools/` 或 `workspace/source/<engine>/` | [任务书模板](templates/task-spec-template.md) |
-| J6 双轨门禁 | 轨道 A 正确性 + 轨道 B 性能（探索态 / 验收态） | 门禁报告 | 过程 `workspace/ledger/<case-id>/`；入库 `cases/<case-id>.md` §5 | [门禁规则](gates/README.md) |
+| J1 目标定义 | 冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/<scenario-id>/ledger/00-scope.md`（条目 md 仅在过验收态门禁后沉淀，见 §6.5） | [01](docs/01-pipeline-and-ledger.md) |
+| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/<scenario-id>/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前 | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/<scenario-id>/source/<engine>/`（只读阅读）；gap 清单落 `workspace/<scenario-id>/ledger/00-scope.md` | [01](docs/01-pipeline-and-ledger.md) |
+| J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/<scenario-id>/ledger/02-baseline-ledger.md` | [01](docs/01-pipeline-and-ledger.md) |
+| J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/<scenario-id>/ledger/iterations/` | [02](docs/02-ascend-diagnosis-sop.md) |
+| J4 干预决策 | 五阶梯按 ROI 排序，**动手前声明源码落点** | 决策记录 + 落点声明 | `workspace/<scenario-id>/optimized/` 或 `workspace/<scenario-id>/source/<engine>/` | [01](docs/01-pipeline-and-ledger.md) |
+| J5 任务书交付 | 两阶段：方案评审 → 实现自测 | 任务书 + `test_op.py` / `benchmark_op.py` | `workspace/<scenario-id>/optimized/{plugins,kernels,tools}/` 或 `workspace/<scenario-id>/source/<engine>/` | [任务书模板](templates/task-spec-template.md) |
+| J6 双轨门禁 | 轨道 A 正确性 + 轨道 B 性能（探索态 / 验收态） | 门禁报告 | 过程 `workspace/<scenario-id>/ledger/`；入库 `cases/<entry-id>.md` §5 | [门禁规则](gates/README.md) |
 
 回边：J6 未达预期 → 回 J3 重新归因；J4 阶梯失败 → 回退上一阶梯；J2 证明物理不可达 → 回 J1 重谈 SLO。
 
@@ -31,14 +31,14 @@
 
 | 落点 | 权限 | 何时用 |
 | :--- | :--- | :--- |
-| `workspace/optimized/plugins/` | 可写（**不入库**） | 阶梯 3：引擎支持插件化（register_model / QuantizationConfig / AttentionBackend），无需改引擎源码 |
-| `workspace/optimized/kernels/` | 可写（**不入库**） | 阶梯 4：生态确无现成实现；**每算子强制含 `test_op.py` + `benchmark_op.py`** |
-| `workspace/optimized/tools/` | 可写（**不入库**） | 辅助工具（golden 采集 / ND↔NZ 重排 / msprof 解析） |
-| `workspace/source/<engine>/` | 可写（**不入库**，独立 `.git`） | 仅阶梯 2/4/5 必须改引擎源码时；建优化分支，改动用 `scripts/manage_repos.sh export-patch` 归档到 `workspace/ledger/<case>/patches/` |
-| `repos/refs/<repo>/` | **只读** | 参考实现（复用思路需落到 `workspace/optimized/`） |
+| `workspace/<scenario-id>/optimized/plugins/` | 可写（**不入库**） | 阶梯 3：引擎支持插件化（register_model / QuantizationConfig / AttentionBackend），无需改引擎源码 |
+| `workspace/<scenario-id>/optimized/kernels/` | 可写（**不入库**） | 阶梯 4：生态确无现成实现；**每算子强制含 `test_op.py` + `benchmark_op.py`** |
+| `workspace/<scenario-id>/optimized/tools/` | 可写（**不入库**） | 辅助工具（golden 采集 / ND↔NZ 重排 / msprof 解析） |
+| `workspace/<scenario-id>/source/<engine>/` | 可写（**不入库**，独立 `.git`） | 仅阶梯 2/4/5 必须改引擎源码时；建优化分支，改动用 `scripts/manage_repos.sh export-patch` 归档到 `workspace/<scenario-id>/ledger/patches/` |
+| `repos/refs/<repo>/` | **只读** | 参考实现（复用思路需落到 `workspace/<scenario-id>/optimized/`） |
 
-- **强制**：J4/J5 动手前必须在任务书中显式声明「目标源码落点」（`workspace/optimized/{kernels,plugins,tools}/` \| `workspace/source/<repo>`）与「参考源码路径」（`repos/refs/<repo>`），未经声明不得编码。
-- `repos/refs/` 只读：需要复用其思路时在 `workspace/optimized/` 自研实现；`workspace/source/` 的改动必须 `export-patch` 到 `workspace/ledger/<case>/patches/`，交付以 patch 为准（脚本见 [manage_repos.sh](scripts/manage_repos.sh)）。
+- **强制**：J4/J5 动手前必须在任务书中显式声明「目标源码落点」（`workspace/<scenario-id>/optimized/{kernels,plugins,tools}/` \| `workspace/<scenario-id>/source/<repo>`）与「参考源码路径」（`repos/refs/<repo>`），未经声明不得编码。
+- `repos/refs/` 只读：需要复用其思路时在 `workspace/<scenario-id>/optimized/` 自研实现；`workspace/<scenario-id>/source/` 的改动必须 `export-patch` 到 `workspace/<scenario-id>/ledger/patches/`，交付以 patch 为准（脚本见 [manage_repos.sh](scripts/manage_repos.sh)）。
 
 ## 3. J2 双约束账本铁律
 
@@ -69,16 +69,19 @@
 3. **门禁所有权**：门禁脚本 / 阈值 / 基线由架构师持有并对 Agent **只读**（Agent 无写权限的独立仓或受保护分支），Agent 只交实现与自测，不得改门禁——见 [gates/README.md](gates/README.md)。
 4. 交付必须附从零复现命令与版本信息；「换台机器跑不出同样结果」即视为未通过。
 
-## 6.5 J6 后的沉淀：案例入库引导
+## 6.5 J6 后的沉淀：条目入库引导
 
-- 优化**有效果且过验收态门禁**后，由 Agent **自主沉淀为案例**：写 `cases/<case-id>.md`（7 节规范见 [docs/05](docs/05-case-library-and-ledger.md)）并更新 [cases/index.md](cases/index.md)。
-- 过程台账保留在 `workspace/ledger/<case-id>/`；**案例库入库纪律：仅验收态有效果案例**。
+> **场景 vs 条目**：场景 = `workspace/<scenario-id>/` 的工作现场（硬件×模型×变体×主攻方向的迭代，产出 0..N 个条目）；条目 = `cases/<entry-id>.md` 的可复用技术条目（如 `op-fusion`、`net-transfer-fusion`），可被多场景引用、元信息头记录来源场景。**场景是过程，条目是沉淀**，两词不得混用。
+
+- 优化**有效果且过验收态门禁**后，由 Agent **自主沉淀为条目**：写 `cases/<entry-id>.md`（7 节规范见 [docs/05](docs/05-case-library-and-ledger.md)）并更新 [cases/index.md](cases/index.md)。
+- **条目 = 可复用技术条目**（如 `op-fusion`、`net-transfer-fusion`）：一个场景可产出多个条目，条目元信息头记录来源场景。
+- 过程台账保留在 `workspace/<scenario-id>/ledger/`；**入库纪律：仅验收态有效果条目**。
 
 ## 7. 知识库与第三方技能路由
 
 **自研 / 个性化知识 → `docs/`**（方法论主文 + 实操章节）：
 
-| 场景 | 入口 |
+| 主题 | 入口 |
 | :--- | :--- |
 | 算子开发与审查 | [docs/01](docs/01-pipeline-and-ledger.md) §`阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）` |
 | 量化与门禁 | [docs/01](docs/01-pipeline-and-ledger.md) §`J6 实操：量化与门禁（msmodelslim + L1/L2/L3 + 探索态/验收态）` |
@@ -94,7 +97,7 @@
 
 | 脚本 | 关键子命令 | 用途 |
 | :--- | :--- | :--- |
-| [manage_repos.sh](scripts/manage_repos.sh) | `--list` / `clone [--targets\|--refs\|<name>]` / `status` / `export-patch <repo> <case>` | 目标源码（`workspace/source/`）与参考底座（`repos/refs/`）的克隆、巡检与补丁归档 |
+| [manage_repos.sh](scripts/manage_repos.sh) | `--list [--scenario <id>]` / `clone [--targets\|--refs\|<name>\|URL] [--scenario <id>]` / `status [--scenario <id>]` / `export-patch <repo> --scenario <id>` | 目标源码（`workspace/<scenario-id>/source/`）与参考底座（`repos/refs/`）的克隆、巡检与补丁归档 |
 | [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {operators,network,tooling,engines,all} [--only <name>]` | 从 21 个外部源仓同步 SKILL.md 到 `.agents/skills/external/` |
 
 ## 9. 主机环境取证

@@ -1,5 +1,5 @@
 # === 只读参考底座（子目录独立 .git，不跟踪其内部代码，仅保留 .gitkeep）===
-#     注：待优化的目标工程源码不在 repos/，而在 workspace/source/（整目录忽略）
+#     注：待优化的目标工程源码不在 repos/，而在 workspace/<scenario-id>/source/（每场景一份，整目录忽略）
 /repos/refs/*
 !/repos/refs/.gitkeep
 

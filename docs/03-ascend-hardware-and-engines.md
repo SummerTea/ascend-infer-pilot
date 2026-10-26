@@ -66,27 +66,27 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 - 宿主通常**未安装 torch / torch_npu**，评测与采集一律进 Docker 容器；`docker ps -a` / `docker images` 核对容器与镜像（镜像名见 `AGENTS.md.local`）。
 - 磁盘布局与容量以 `df -h` 实测为准（模型/数据集路径见 `AGENTS.md.local`）。
 
-校准结果落 `workspace/ledger/_shared/calibration.md`（跨案例共享、不入库，按 `<模型>@<硬件>` 分节；α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）。
+校准结果落 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<模型>@<硬件>` 分节；α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）。
 
 ---
 
 ## 3. 引擎扩展挂载点索引（昇腾版）
 
-> **路径说明**：改引擎落 `workspace/source/<engine>/`（不入库；使用前先 `bash scripts/manage_repos.sh clone <name>`，manifest 见 `repos/manifest.yaml`）才有本地源码。**只读参考**一律放 `repos/refs/<repo>/`，严禁修改。改引擎必须用 `bash scripts/manage_repos.sh export-patch <engine> <case_name>` 导出补丁。
+> **路径说明**：改引擎落 `workspace/<scenario-id>/source/<engine>/`（不入库；使用前先 `bash scripts/manage_repos.sh clone <name>`，manifest 见 `repos/manifest.yaml`）才有本地源码。**只读参考**一律放 `repos/refs/<repo>/`，严禁修改。改引擎必须用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出补丁。
 
-### 3.1 vllm-ascend / vLLM（`workspace/source/vllm-ascend/`、`workspace/source/vllm/`）
+### 3.1 vllm-ascend / vLLM（`workspace/<scenario-id>/source/vllm-ascend/`、`workspace/<scenario-id>/source/vllm/`）
 
 | 挂载点 | 位置（昇腾侧） | 用途 |
 | :--- | :--- | :--- |
-| `register_model` | vLLM `vllm/model_executor/models/registry.py`（`ModelRegistry.register_model("Arch", "my_pkg.models:MyModel")`，**非装饰器**：`register_model` 返回 `None`，字符串须 `<module>:<class>` 冒号形式） | 挂载非标模型结构（阶梯 3/4；以 `workspace/source/vllm/` 实际 pin 版本为准，须上机核实） |
+| `register_model` | vLLM `vllm/model_executor/models/registry.py`（`ModelRegistry.register_model("Arch", "my_pkg.models:MyModel")`，**非装饰器**：`register_model` 返回 `None`，字符串须 `<module>:<class>` 冒号形式） | 挂载非标模型结构（阶梯 3/4；以 `workspace/<scenario-id>/source/vllm/` 实际 pin 版本为准，须上机核实） |
 | `register_backend` / `AttentionBackend` | vLLM `vllm/v1/attention/backends/registry.py`（**`class_path=None` 才返回装饰器**：`@register_backend(AttentionBackendEnum.CUSTOM)` 修饰实现类，或命名注册 `register_backend("ASCEND", "my_pkg.attn.AscendAttentionBackend")`——**点号限定名**，上游 `resolve_obj_by_qualname` 用 `rsplit(".",1)` 解析，冒号形式会 `AttributeError`；实现为 `AscendAttentionBackendImpl`） | 按平台/头维/KV dtype 分派 FIA（AscendAttentionBackend / `npu_fused_infer_attention_score`）等昇腾后端 |
 | `register_quantization_config` | vLLM `vllm/model_executor/layers/quantization/__init__.py`（继承 `QuantizationConfig`） | 权重加载期转置/重排与低比特路径（ATB 量化解码 / msmodelslim 导出权重） |
 | entry_points 插件 | vllm-ascend 的 pyproject entry points + 扩展包加载 | 昇腾专属算子与 hook 以插件形态隔离集成（阶梯 3） |
-| torch_npu 融合算子替换 | `workspace/source/vllm-ascend/`（ops/ 目录：FIA / MLA absorb / MoE GMM / RoPE / KV write） | 识别并替换 torch_npu 融合算子（诊断 SOP 瓶颈 1 的「融合度验证」落点） |
+| torch_npu 融合算子替换 | `workspace/<scenario-id>/source/vllm-ascend/`（ops/ 目录：FIA / MLA absorb / MoE GMM / RoPE / KV write） | 识别并替换 torch_npu 融合算子（诊断 SOP 瓶颈 1 的「融合度验证」落点） |
 
-### 3.2 MindIE-LLM / MindIE-Motor / MindIE-Turbo（`workspace/source/MindIE-LLM/`、`workspace/source/MindIE-Motor/`）
+### 3.2 MindIE-LLM / MindIE-Motor / MindIE-Turbo（`workspace/<scenario-id>/source/MindIE-LLM/`、`workspace/<scenario-id>/source/MindIE-Motor/`）
 
-> ⚠️ **MindIE-Turbo 无独立 clone**（manifest 无该仓），作为面向第三方引擎（vLLM / SGLang）的通用 NPU 加速层引用，**勿**寻找 `workspace/source/MindIE-Turbo/`。
+> ⚠️ **MindIE-Turbo 无独立 clone**（manifest 无该仓），作为面向第三方引擎（vLLM / SGLang）的通用 NPU 加速层引用，**勿**寻找 `workspace/<scenario-id>/source/MindIE-Turbo/`。
 
 | 引擎 | 挂载点 | 用途 |
 | :--- | :--- | :--- |
@@ -94,13 +94,13 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 | **MindIE-Motor** | PD 分离与集群服务化（deploy/diagnosis/validation 技能族） | 对标 Dynamo/vLLM-router 的编排层：Prefill/Decode 分离、请求分派、KV 拉取（阶梯 3 / J4 前置选项） |
 | **MindIE-Turbo** | 面向第三方引擎（vLLM / SGLang）的通用 NPU 加速组件 | 不换引擎时引入的通用加速层（J4 前置「换宿主」的轻量替代） |
 
-### 3.3 xLLM（`workspace/source/xllm/`）
+### 3.3 xLLM（`workspace/<scenario-id>/source/xllm/`）
 
 | 挂载点 | 位置 | 用途 |
 | :--- | :--- | :--- |
-| **TileLang-Ascend 集成** | xLLM 推理栈内嵌 TileLang backend（配合 `workspace/source/tilelang-ascend/`，分支 `ascendc_pto`） | Triton→TileLang 语义映射、kernel 级移植与编译器 Pass 直达（阶梯 4/5）；`tilelang-perf-optimization` 技能强制 `msprof op` 度量 |
+| **TileLang-Ascend 集成** | xLLM 推理栈内嵌 TileLang backend（配合 `workspace/<scenario-id>/source/tilelang-ascend/`，分支 `ascendc_pto`） | Triton→TileLang 语义映射、kernel 级移植与编译器 Pass 直达（阶梯 4/5）；`tilelang-perf-optimization` 技能强制 `msprof op` 度量 |
 
-### 3.4 SGLang-Ascend（`workspace/source/sglang/`）
+### 3.4 SGLang-Ascend（`workspace/<scenario-id>/source/sglang/`）
 
 | 挂载点 | 位置 | 用途 |
 | :--- | :--- | :--- |
@@ -117,7 +117,7 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 | `repos/refs/pto-kernels/` | **A2A3（910B）/ A5（950）双代**算子参考实现（双代差异直接对照） |
 | `repos/refs/Mooncake/` | KV 跨机传输与 PD 解耦参考底座 |
 
-> **阶梯 2/4/5 必须改引擎时**：改 `workspace/source/<engine>/`（如 `workspace/source/vllm-ascend/`、`workspace/source/vllm/`、`workspace/source/sglang/`、`workspace/source/MindIE-LLM/`、`workspace/source/MindIE-Motor/`、`workspace/source/xllm/`、`workspace/source/tilelang-ascend/`）；若引擎已是克隆仓，直接在仓内修改并 `export-patch`。
+> **阶梯 2/4/5 必须改引擎时**：改 `workspace/<scenario-id>/source/<engine>/`（如 `workspace/<scenario-id>/source/vllm-ascend/`、`workspace/<scenario-id>/source/vllm/`、`workspace/<scenario-id>/source/sglang/`、`workspace/<scenario-id>/source/MindIE-LLM/`、`workspace/<scenario-id>/source/MindIE-Motor/`、`workspace/<scenario-id>/source/xllm/`、`workspace/<scenario-id>/source/tilelang-ascend/`）；若引擎已是克隆仓，直接在仓内修改并 `export-patch`。
 
 ---
 
@@ -205,7 +205,7 @@ msprobe dump --output=/tmp/probe_dump <运行命令>     # 子命令参数以 ms
 
 ## vllm-ascend 接入与融合算子替换
 
-vllm-ascend 是本工程主力引擎。模型接入走**注册表 + entry_points 插件**（阶梯 3），融合算子替换落 `workspace/source/vllm-ascend/`（阶梯 4）。挂载点索引见 §3.1；引擎与源码落点纪律见 §3 开篇。**类名/接口以实际源码为准**，编码前 grep 实际源码确认，禁止臆造不存在的类名。
+vllm-ascend 是本工程主力引擎。模型接入走**注册表 + entry_points 插件**（阶梯 3），融合算子替换落 `workspace/<scenario-id>/source/vllm-ascend/`（阶梯 4）。挂载点索引见 §3.1；引擎与源码落点纪律见 §3 开篇。**类名/接口以实际源码为准**，编码前 grep 实际源码确认，禁止臆造不存在的类名。
 
 ### 1. 两段门禁（接入冒烟，J1.5 入口检查点）
 
@@ -216,7 +216,7 @@ vllm-ascend 是本工程主力引擎。模型接入走**注册表 + entry_points
 
 ### 2. 模型接入（register_model + 权重名映射）
 
-- 挂载点：`vllm/model_executor/models/registry.py` 的 `ModelRegistry.register_model("Arch", "my_pkg.models:MyModel")`——**非装饰器**（`register_model` 返回 `None`），须先 `from vllm.model_executor.models.registry import ModelRegistry`；以 `workspace/source/vllm/` 实际 pin 版本为准（须上机核实）。
+- 挂载点：`vllm/model_executor/models/registry.py` 的 `ModelRegistry.register_model("Arch", "my_pkg.models:MyModel")`——**非装饰器**（`register_model` 返回 `None`），须先 `from vllm.model_executor.models.registry import ModelRegistry`；以 `workspace/<scenario-id>/source/vllm/` 实际 pin 版本为准（须上机核实）。
 - 权重名映射：safetensors 键名 ↔ 建模层参数名逐层对齐；`config.json` 不被识别的字段（`tie_word_embeddings`、RoPE scaling、MoE 路由、量化 scale 布局）单独处理。
 
 **完成标准**：模型类加载成功，权重名映射无遗漏（加载后无「weight not found」类告警，具体报错形态须上机核实）；非标结构判定落阶梯 3/4。
@@ -239,11 +239,11 @@ vllm-ascend 是本工程主力引擎。模型接入走**注册表 + entry_points
 
 vllm-ascend 的 pyproject entry points + 扩展包加载，昇腾专属算子与 hook 以插件形态隔离集成。
 
-**完成标准**：插件落 `workspace/optimized/plugins/`（本工程源码落点，不入库），独立加载、不侵入引擎主干；可热替换/回退。
+**完成标准**：插件落 `workspace/<scenario-id>/optimized/plugins/`（本工程源码落点，不入库），独立加载、不侵入引擎主干；可热替换/回退。
 
 ### 6. torch_npu 融合算子替换（阶梯 4）
 
-按 [诊断 SOP §3 瓶颈 1](02-ascend-diagnosis-sop.md) 的「融合度验证」识别未生效的融合算子，在 `workspace/source/vllm-ascend/` 的 ops/ 目录替换：
+按 [诊断 SOP §3 瓶颈 1](02-ascend-diagnosis-sop.md) 的「融合度验证」识别未生效的融合算子，在 `workspace/<scenario-id>/source/vllm-ascend/` 的 ops/ 目录替换：
 
 | 算子族 | 替换目标 |
 | :--- | :--- |
@@ -257,9 +257,9 @@ vllm-ascend 的 pyproject entry points + 扩展包加载，昇腾专属算子与
 
 ### 常见坑
 
-1. **臆造注意力后端类名**：昇腾侧不存在 FlashAttention 系类名；昇腾后端实现是 `AscendAttentionBackendImpl`，底层 `npu_fused_infer_attention_score`——编码前 grep 实际源码（`rg -n 'AscendAttentionBackend' workspace/source/vllm-ascend/`）。
+1. **臆造注意力后端类名**：昇腾侧不存在 FlashAttention 系类名；昇腾后端实现是 `AscendAttentionBackendImpl`，底层 `npu_fused_infer_attention_score`——编码前 grep 实际源码（`rg -n 'AscendAttentionBackend' workspace/<scenario-id>/source/vllm-ascend/`）。
 2. **注册后仍走 fallback**：`register_backend` 只登记，分派还看平台/头维/KV dtype 条件；服务日志确认走了 ASCEND 后端才作数。
 3. **config 不识别字段硬塞**：`tie_word_embeddings`、RoPE scaling、MoE 路由等字段须显式处理，否则静默用默认值 → 精度错而加载不报错。
 4. **前向动态转换权重**：反量化/`.contiguous()` 必须在加载期一次完成（红线 2）；`.t()` 只改 stride 也会留非连续布局，同样在加载期消除。
 5. **只用「改造前后对比」当正确性**：必须锚定独立 golden；两段门禁的**真权重强制验证**不可跳过。
-6. **改 `workspace/source/` 不 export-patch**：引擎改动以 patch 交付（`bash scripts/manage_repos.sh export-patch <engine> <case>`，产物落 `workspace/ledger/<case>/patches/`，不入库），否则交付不可复现。
+6. **改 `workspace/<scenario-id>/source/` 不 export-patch**：引擎改动以 patch 交付（`bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>`，产物落 `workspace/<scenario-id>/ledger/patches/`，不入库），否则交付不可复现。

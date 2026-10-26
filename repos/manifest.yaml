@@ -1,6 +1,6 @@
 # 昇腾大模型推理优化工程 - 源码仓库清单
 # 说明：targets = 待优化的目标工程（可改并导出 patch）；refs = 只读参考底座（严禁修改）
-# 注：targets 段为「待优化目标工程」，clone 落点为 workspace/source/<name>（不入库）；refs 段落点为 repos/refs/<name>（只读）。
+# 注：targets 段为「待优化目标工程」，clone 落点为 workspace/<scenario-id>/source/<name>（每场景一份，不入库，需 --scenario）；refs 段落点为 repos/refs/<name>（只读）。
 targets:
   vllm-ascend:
     url: https://github.com/vllm-project/vllm-ascend.git

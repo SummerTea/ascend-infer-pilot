@@ -1,7 +1,7 @@
 # NPU 硬件基线校准台账（P_eff / BW_eff）
 
 > 任何「利用率低于 X%」的判定，分母必须来自本台账的**本机实测** `P_eff` / `BW_eff`，禁止用理论峰值（见 [AGENTS.md](../AGENTS.md) §3）。台账更新即触发引用方（任务书 / 门禁阈值 / PMR）同步复算。
-> **落点**：本台账实际存放于 `workspace/ledger/_shared/calibration.md`（跨案例共享、**不入库**，按 `<模型>@<硬件>` 分节）。
+> **落点**：本台账实际存放于 `workspace/_shared/calibration.md`（跨场景共享、**不入库**，按 `<模型>@<硬件>` 分节）。
 
 ## 一、环境冻结（每次复测必须完整记录）
 
@@ -45,7 +45,7 @@
 
 - 端到端：`msprof --application="<命令>" --output=<路径>` → 产物 `<性能剖析文件路径>`。
 - 算子微基准：`msprof op --application="python3 benchmark_op.py"` → 产物 `<msprof op 报告路径>`（`msprof op` 选项以本机 `msprof op -h` 为准，须上机核实）。
-- 产物统一归档到 `workspace/ledger/<case>/profiling/`（不入库），随 [PMR](../templates/pmr-log-template.md) 一并留存。
+- 产物统一归档到 `workspace/<scenario-id>/ledger/profiling/`（不入库），随 [PMR](../templates/pmr-log-template.md) 一并留存。
 
 ## 七、复测触发条件
 

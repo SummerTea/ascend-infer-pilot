@@ -13,7 +13,7 @@
 | 阶段 | 输入 | 产出物 | 门禁 / 出口条件 | 回边 |
 | :--- | :--- | :--- | :--- | :--- |
 | **J1 目标定义** | 硬件上下文 / 模型结构特征向量 / 负载分布 / SLO 与目标指标 | 冻结的「目标定义卡」（4 维度，见 §2） | 四维度齐全且无争议 | — |
-| **J1.5 引擎能力盘点** | 目标定义卡 + 引擎源码（`workspace/source/*`） | **gap 清单**（见 §3）；接入冒烟 + 黄金参考在 J2 之后、J3 之前执行 | gap 逐项落到五阶梯某一级 | J1 特征提取有误 → 回 J1 |
+| **J1.5 引擎能力盘点** | 目标定义卡 + 引擎源码（`workspace/<scenario-id>/source/*`） | **gap 清单**（见 §3）；接入冒烟 + 黄金参考在 J2 之后、J3 之前执行 | gap 逐项落到五阶梯某一级 | J1 特征提取有误 → 回 J1 |
 | **J2 物理上限核算** | 目标定义卡 + 硬件规格表 + 本机校准 | 双约束账本：`P_eff` / `BW_eff` / `B*` / 显存账本 / 时间下界 | 结果可复算、口径唯一 | **物理不可达 → 回 J1 重谈 SLO** |
 | **J3 基线归因** | 双约束账本 + 接入冒烟通过 + J3.0 配置粗扫 | 可信基线 + 多维度瓶颈分解（L1–L4） | 总耗时可映射到明确归因类别（不设固定百分比） | 归因到默认配置瓶颈 → 先做 J3.0 粗扫 |
 | **J4 干预决策** | 基线归因 + gap 清单 | **ROI 决策**（五阶梯 + 并列三选项） | 收益/成本可量化、可回退 | 阶梯失败 → **回退上一阶梯** |
@@ -48,15 +48,15 @@ flowchart LR
 
 ## 3. J1.5 引擎能力盘点与 gap 清单
 
-**产出物形式**：`workspace/ledger/<case-id>/00-scope.md`（内嵌 J1.5 gap，不入库），一张表逐项登记（案例沉淀规范见 [docs/05](05-case-library-and-ledger.md)）：
+**产出物形式**：`workspace/<scenario-id>/ledger/00-scope.md`（内嵌 J1.5 gap，不入库），一张表逐项登记（条目沉淀规范见 [docs/05](05-case-library-and-ledger.md)）：
 
 | 组件 | 引擎现状（支持 / fallback / 缺失） | 需改动 | 源码落点 | 对应阶梯 |
 | :--- | :--- | :--- | :--- | :--- |
-| 模型定义与权重名映射 | 同族实现可复用 / eager 降级 | `register_model` | `workspace/source/vllm-ascend/`、`workspace/source/vllm/` | 3/4 |
-| 注意力后端 | 头维 / KV 形态是否被 FIA/ATB 覆盖 | `register_backend` / `AttentionBackend` | `workspace/source/vllm/`（v1/attention/backends） | 2/3 |
-| 量化配置 | 量化格式是否有对应 `QuantizationConfig` | `register_quantization_config` | `workspace/source/vllm/` | 3 |
-| tokenizer / chat template / RoPE scaling | 就绪 / 缺失 | config 级 | `workspace/source/<engine>/` | 1 |
-| MoE 路由 / 共享专家 / GMM | 引擎内置 vs 需融合算子 | torch_npu 融合算子替换 | `workspace/source/vllm-ascend/`（ops/） | 2/4 |
+| 模型定义与权重名映射 | 同族实现可复用 / eager 降级 | `register_model` | `workspace/<scenario-id>/source/vllm-ascend/`、`workspace/<scenario-id>/source/vllm/` | 3/4 |
+| 注意力后端 | 头维 / KV 形态是否被 FIA/ATB 覆盖 | `register_backend` / `AttentionBackend` | `workspace/<scenario-id>/source/vllm/`（v1/attention/backends） | 2/3 |
+| 量化配置 | 量化格式是否有对应 `QuantizationConfig` | `register_quantization_config` | `workspace/<scenario-id>/source/vllm/` | 3 |
+| tokenizer / chat template / RoPE scaling | 就绪 / 缺失 | config 级 | `workspace/<scenario-id>/source/<engine>/` | 1 |
+| MoE 路由 / 共享专家 / GMM | 引擎内置 vs 需融合算子 | torch_npu 融合算子替换 | `workspace/<scenario-id>/source/vllm-ascend/`（ops/） | 2/4 |
 | 量化 scale 布局 / 低比特路径 | 910B3 走 ATB 量化解码；950 走 MXFP | msmodelslim 导出 | `repos/refs/msmodelslim/`（只读） | 3 |
 
 > **fallback 识别**：当前不支持时引擎走的降级路径（eager / naive attention / CPU offload）的耗时**不是**架构瓶颈，不得作为 J2/J3 的基线。
@@ -95,7 +95,7 @@ npu-smi info
 npu-smi set -t clock -i 0 -c 0 --value 1500   # 锁频后多轮数据才可比
 ```
 
-> 校准结果存档为 `workspace/ledger/_shared/calibration.md`（跨案例共享、不入库，按 `<模型>@<硬件>` 分节；含 α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）；**换 CANN / torch_npu / 芯片版本必复测**（见 [技能目录 §维护](04-skill-catalog-and-maintenance.md)）。
+> 校准结果存档为 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<模型>@<硬件>` 分节；含 α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）；**换 CANN / torch_npu / 芯片版本必复测**（见 [技能目录 §维护](04-skill-catalog-and-maintenance.md)）。
 
 ### 4.1 参数口径（Dense 与 MoE 必须分开）
 
@@ -188,10 +188,10 @@ flowchart TD
     Step1 --"不能"--> Step2{"【阶梯 2：已有成熟后端切换】<br/>生态现有后端/Kernel 能否替换？"}
     Step2 --"能"--> Done2["配置/参数切换后端并验证"]
     Step2 --"不能"--> Step3{"【阶梯 3：Out-of-tree 插件扩展】<br/>能否通过插件隔离集成？"}
-    Step3 --"能"--> Done3["编写独立插件/注册机制并接入 workspace/optimized/plugins/"]
+    Step3 --"能"--> Done3["编写独立插件/注册机制并接入 workspace/<scenario-id>/optimized/plugins/"]
     Step3 --"不能"--> Step4{"【阶梯 4：专用 Kernel 移植与开发】<br/>该结构/精度是否确无生态现成实现？"}
-    Step4 --"能"--> Done4["AscendC / Triton-Ascend / TileLang-Ascend / CATLASS 编写 Kernel → workspace/optimized/kernels/"]
-    Step4 --"不能"--> Step5["【阶梯 5：底层引擎内核重写与 Fork】<br/>重构调度状态机、内存分配与核心执行流 → workspace/source/<engine>/"]
+    Step4 --"能"--> Done4["AscendC / Triton-Ascend / TileLang-Ascend / CATLASS 编写 Kernel → workspace/<scenario-id>/optimized/kernels/"]
+    Step4 --"不能"--> Step5["【阶梯 5：底层引擎内核重写与 Fork】<br/>重构调度状态机、内存分配与核心执行流 → workspace/<scenario-id>/source/<engine>/"]
     Done4 -. "方案失败 → 回退上一阶梯" .-> Step3
     Step5 -. "收益不抵维护成本 → 回退上一阶梯" .-> Step4
 ```
@@ -210,13 +210,13 @@ flowchart TD
 | :--- | :--- | :--- | :--- | :--- |
 | **阶梯 1：配置与编排调优** | 算法与算子均成熟，瓶颈来自参数不匹配或拓扑规划失误 | 调 TP/EP 规模、`max_num_batched_tokens` / `max_num_seqs`、KV dtype（BF16/FP8）、chunked prefill、`npugraph_ex` / TorchAir 图捕获分桶 | 极低（小时级） | 零 |
 | **阶梯 2：已有成熟后端切换** | 引擎内置多种后端，默认后端非当前硬件最优 | 切换 Attention 后端（FIA / ATB 融合算子 / ACLNN 单算子）、切换量化解码路径（ATB 低比特 / msmodelslim 导出权重的加载路径） | 低（天级） | 极低 |
-| **阶梯 3：Out-of-tree 插件扩展** | 需支持新量化格式、外部记忆表或非标模型结构，引擎支持插件 | vllm-ascend / vLLM 的 `register_quantization_config`、`register_model`、`register_backend`；`workspace/optimized/plugins/` 独立解耦包 | 中（数天） | 低（不破坏引擎主干升级能力） |
-| **阶梯 4：专用 Kernel 移植与开发** | 全新结构（非标头维 MLA、长线性注意力）、或目标代际缺失原生指令 | AscendC / Triton-Ascend / PyPTO / TileLang-Ascend / CATLASS 编写 Fused 算子（RoPE/KV write/QK Norm/MoE GMM/MLA absorb）；前沿 Kernel 向 A2A3 / A5 移植；落 `workspace/optimized/kernels/` | 高（1~2 周） | 中（精度与多代际分支持续维护） |
-| **阶梯 5：底层引擎内核重写与 Fork** | 引擎控制面延迟过高（Python 瓶颈无法根除）、或调度模型与架构不兼容 | 调度状态机下沉、重写内存管理与 HCCL 通信流；必须改引擎时落 `workspace/source/<engine>/` 并走 `export-patch` 导出 | 极高（月级） | 极高（脱离社区主干，背负沉重包袱） |
+| **阶梯 3：Out-of-tree 插件扩展** | 需支持新量化格式、外部记忆表或非标模型结构，引擎支持插件 | vllm-ascend / vLLM 的 `register_quantization_config`、`register_model`、`register_backend`；`workspace/<scenario-id>/optimized/plugins/` 独立解耦包 | 中（数天） | 低（不破坏引擎主干升级能力） |
+| **阶梯 4：专用 Kernel 移植与开发** | 全新结构（非标头维 MLA、长线性注意力）、或目标代际缺失原生指令 | AscendC / Triton-Ascend / PyPTO / TileLang-Ascend / CATLASS 编写 Fused 算子（RoPE/KV write/QK Norm/MoE GMM/MLA absorb）；前沿 Kernel 向 A2A3 / A5 移植；落 `workspace/<scenario-id>/optimized/kernels/` | 高（1~2 周） | 中（精度与多代际分支持续维护） |
+| **阶梯 5：底层引擎内核重写与 Fork** | 引擎控制面延迟过高（Python 瓶颈无法根除）、或调度模型与架构不兼容 | 调度状态机下沉、重写内存管理与 HCCL 通信流；必须改引擎时落 `workspace/<scenario-id>/source/<engine>/` 并走 `export-patch` 导出 | 极高（月级） | 极高（脱离社区主干，背负沉重包袱） |
 
-**回退规则**：阶梯是「尝试顺序」而非「单向阶梯」。阶梯 4/5 尝试失败后必须回退到上一阶梯（并在 `workspace/ledger/<case-id>/`（台账）留痕），不得因已投入成本继续加码。
+**回退规则**：阶梯是「尝试顺序」而非「单向阶梯」。阶梯 4/5 尝试失败后必须回退到上一阶梯（并在 `workspace/<scenario-id>/ledger/`（台账）留痕），不得因已投入成本继续加码。
 
-**源码落点对照**：阶梯 3 → `workspace/optimized/plugins/`；阶梯 4 → `workspace/optimized/kernels/`；阶梯 2/4/5 必须改引擎 → `workspace/source/<engine>/`（改后用 `bash scripts/manage_repos.sh export-patch <engine> <case_name>` 导出补丁到 `workspace/ledger/<case_name>/patches/`，不入库）；只读参考 → `repos/refs/<repo>/`（严禁修改）。落点与交付物规范见 [docs/05](05-case-library-and-ledger.md)。
+**源码落点对照**：阶梯 3 → `workspace/<scenario-id>/optimized/plugins/`；阶梯 4 → `workspace/<scenario-id>/optimized/kernels/`；阶梯 2/4/5 必须改引擎 → `workspace/<scenario-id>/source/<engine>/`（改后用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出补丁到 `workspace/<scenario-id>/ledger/patches/`，不入库）；只读参考 → `repos/refs/<repo>/`（严禁修改）。落点与交付物规范见 [docs/05](05-case-library-and-ledger.md)。
 
 ---
 
@@ -234,7 +234,7 @@ flowchart TD
 
 ## 阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）
 
-针对 J4 阶梯 4「专用 Kernel 移植与开发」的算子实现、审查与交付。动手前必读 [AGENTS.md](../AGENTS.md) §5 五不准红线与 [任务书模板](../templates/task-spec-template.md)（两阶段交付、方案评审先行）。参考实现一律读 `repos/refs/<repo>/`（只读），交付落 `workspace/optimized/kernels/`；**环境与配套版本事实见 `AGENTS.md.local`**（本机 CANN / torch_npu / 驱动版本）。
+针对 J4 阶梯 4「专用 Kernel 移植与开发」的算子实现、审查与交付。动手前必读 [AGENTS.md](../AGENTS.md) §5 五不准红线与 [任务书模板](../templates/task-spec-template.md)（两阶段交付、方案评审先行）。参考实现一律读 `repos/refs/<repo>/`（只读），交付落 `workspace/<scenario-id>/optimized/kernels/`；**环境与配套版本事实见 `AGENTS.md.local`**（本机 CANN / torch_npu / 驱动版本）。
 
 ### 1. 读参考实现（J4 前先读再算）
 
@@ -254,7 +254,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **AscendC** | 底层算子、达芬奇 Cube/Vector 异构模型 | 双缓冲流水、`__ubuf__` 组织、精度与边界显式控制 |
 | **Triton-Ascend** | 从 Triton 迁移/快速原型 | **`num_warps` / `num_stages` 在昇腾不可用**（无对应语义，误设不生效或报错）；核类型须匹配 |
-| **TileLang-Ascend** | 高级 Tile 编程、编译器 Pass 直达 | 仓库分支 `ascendc_pto`（`workspace/source/tilelang-ascend/`）；`tilelang-perf-optimization` 强制 `msprof op` 度量 |
+| **TileLang-Ascend** | 高级 Tile 编程、编译器 Pass 直达 | 仓库分支 `ascendc_pto`（`workspace/<scenario-id>/source/tilelang-ascend/`）；`tilelang-perf-optimization` 强制 `msprof op` 度量 |
 | **CATLASS** | 矩阵乘模板库 | **非 CUTLASS 移植**（达芬奇 Cube/Vector 异构模型不同） |
 
 **完成标准**：选定一种并给出理由（结构匹配/生态成熟度/维护成本），在任务书中声明落点。
@@ -347,7 +347,7 @@ torch.testing.assert_close(actual, expect, rtol=..., atol=...)   # 按 dtype 理
 - **探索态**：开发分支快速迭代，同窗 A/B（同并行度 / 同 batch / 同 shape / 同图分桶）验证方向；数据**不得入库**。
 - **验收态**：冻结环境（版本快照）+ 门禁在干净容器/CI 独立执行，固定权重/数据集；附从零复现命令；**通过后才允许入库**。
 
-**完成标准**：相对基线收益 ≥ 预估收益 80%（禁止 J2 物理下界作分母）；开环负载 Goodput 达标（P95 TTFT/TPOT）；验收态报告与版本快照随过程留痕归档 `workspace/ledger/<case-id>/`，入库形态为案例 md §5（规范见 [docs/05](05-case-library-and-ledger.md)）。
+**完成标准**：相对基线收益 ≥ 预估收益 80%（禁止 J2 物理下界作分母）；开环负载 Goodput 达标（P95 TTFT/TPOT）；验收态报告与版本快照随过程留痕归档 `workspace/<scenario-id>/ledger/`，入库形态为条目 md §5（规范见 [docs/05](05-case-library-and-ledger.md)）。
 
 ### 6. 环境硬绑定复测
 

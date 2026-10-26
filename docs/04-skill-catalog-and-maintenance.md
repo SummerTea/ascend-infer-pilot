@@ -20,7 +20,7 @@
 | | | `debug-distributed-hang` | sgl-project/sglang | 分布式卡死/挂起排查（集合通信死锁、rank 不齐、超时定位） |
 | **external** | 21 | 见 §2 全景索引表 | GitCode/GitHub 源仓 | 4 大域：operators(7) / network(4) / tooling(5) / engines(5) |
 
-> **vendored 上游来源**：`mooncake-api`、`mooncake-troubleshoot` 来自 `repos/refs/Mooncake/`（只读底座）；`evalscope` 上游为 `modelscope/evalscope`（**不在 `repos/manifest.yaml` 内**，直接本地入库）；`kernel-microbenchmark`、`triton-kernel-writing` 来自 `workspace/source/vllm/`；`kl-consistency-test`、`debug-distributed-hang` 来自 `workspace/source/sglang/`（vllm / sglang 需先 `bash scripts/manage_repos.sh clone <name>` 才有本地源码）。★本工程 `vendored/` 为**本地入库拷贝**，随根仓库跟踪，**不依赖运行时 clone**（上列来源仓仅说明出处）。自研知识已并入 `docs/01~04` 对应章节（主机环境事实见 `AGENTS.md.local`，不入库）。external 落点 `.agents/skills/external/<域>/<组名>/`（该目录内容被 `.gitignore` 忽略，仅保留 README.md 由脚本管理）。
+> **vendored 上游来源**：`mooncake-api`、`mooncake-troubleshoot` 来自 `repos/refs/Mooncake/`（只读底座）；`evalscope` 上游为 `modelscope/evalscope`（**不在 `repos/manifest.yaml` 内**，直接本地入库）；`kernel-microbenchmark`、`triton-kernel-writing` 来自 `workspace/<scenario-id>/source/vllm/`；`kl-consistency-test`、`debug-distributed-hang` 来自 `workspace/<scenario-id>/source/sglang/`（vllm / sglang 需先 `bash scripts/manage_repos.sh clone <name>` 才有本地源码）。★本工程 `vendored/` 为**本地入库拷贝**，随根仓库跟踪，**不依赖运行时 clone**（上列来源仓仅说明出处）。自研知识已并入 `docs/01~04` 对应章节（主机环境事实见 `AGENTS.md.local`，不入库）。external 落点 `.agents/skills/external/<域>/<组名>/`（该目录内容被 `.gitignore` 忽略，仅保留 README.md 由脚本管理）。
 
 ---
 
@@ -135,9 +135,9 @@ engines   | sglang                  | https://github.com/sgl-project/sglang.git 
 | 类型 | 涉及 | 动作 | 频率 |
 | :--- | :--- | :--- | :--- |
 | **A. GitCode 权威源与镜像** | `cannbot-skills` / `model-agent` / `msmodelslim` / `msagent` | GitCode 权威、GitHub 是镜像（`Ascend/agent-skills` GitHub 版 2026-05 后停更）；取用走 `awesome-ascend-skills` 的 external 镜像（有 CI 同步）；**cannbot `plugins-*` 正在迁移，入口会变**。`sync_ascend_skills.sh --category all` 重同步 | 季度 |
-| **B. 环境硬绑定复测（最高风险）** | 量化/性能类技能（`quantization-dev`、`fla-ascend-performance`、tilelang-perf 等均明示「换 CANN/torch_npu/芯片必须复测」） | **每次升级 CANN / torch_npu / 芯片后重跑验证 SOP**；把「已核验到 CANN x.y + torch_npu a.b.c」记入 `workspace/ledger/_shared/calibration.md` 台账 | 每次环境升级 |
+| **B. 环境硬绑定复测（最高风险）** | 量化/性能类技能（`quantization-dev`、`fla-ascend-performance`、tilelang-perf 等均明示「换 CANN/torch_npu/芯片必须复测」） | **每次升级 CANN / torch_npu / 芯片后重跑验证 SOP**；把「已核验到 CANN x.y + torch_npu a.b.c」记入 `workspace/_shared/calibration.md` 台账 | 每次环境升级 |
 | **C. 版本配套表** | CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK） | **严格对应、不可混装**；用 `migration-ascend-torchnpu-skills-environment-setup` 的配套表；910B3 基准工具版本见 `AGENTS.md.local` | 每次建环境 |
-| **D. 需自建并长期维护** | ① **950 代际约束**（SIMT / HiF8 / UB Bank 重写 / CCU / msprof 指标差异）；② **本机 msprof 基线**（P_eff / BW_eff 实测 + 锁频命令）；③ **docs/01~04 自研知识章节** | 950 约束与基线写入本工程 `docs/` + `workspace/ledger/<case-id>/`（不入库；规范见 [docs/05](05-case-library-and-ledger.md)）；自研知识章节随每次实验迭代 | 持续 |
+| **D. 需自建并长期维护** | ① **950 代际约束**（SIMT / HiF8 / UB Bank 重写 / CCU / msprof 指标差异）；② **本机 msprof 基线**（P_eff / BW_eff 实测 + 锁频命令）；③ **docs/01~04 自研知识章节** | 950 约束与基线写入本工程 `docs/` + `workspace/<scenario-id>/ledger/`（不入库；规范见 [docs/05](05-case-library-and-ledger.md)）；自研知识章节随每次实验迭代 | 持续 |
 
 ---
 

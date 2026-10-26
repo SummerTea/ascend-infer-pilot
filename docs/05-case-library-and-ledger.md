@@ -1,51 +1,71 @@
-# 05 · 案例库与台账规范（案例沉淀 + workspace 过程台账）
+# 05 · 案例库与台账规范（条目沉淀 + workspace 场景台账）
 
-> **定位**：定义案例库（`cases/`，入库）与过程台账（`workspace/ledger/`，不入库）的规范——案例 md 结构、台账 8 项逐文件职责、workspace 落点与串行化约定。
+> **定位**：定义「场景 vs 条目」两层体系、案例库（`cases/`，入库**条目**）与过程台账（`workspace/<scenario-id>/ledger/`，不入库）的规范——条目 md 结构、台账 8 项逐文件职责、workspace 场景工作区规范。
 > **配套**：[流水线与物理账本](01-pipeline-and-ledger.md)（J1→J6 决策流水线）｜ [门禁规则](../gates/README.md) ｜ [校准模板](../templates/calibration-template.md)
-> **路径速记**：`workspace/optimized/`（plugins/kernels/tools）取代原 `src/` 落点；`workspace/source/<repo>/` 取代原引擎克隆目录；案例落点改为平铺 `cases/<case-id>.md` + `cases/index.md`；过程产物一律 `workspace/ledger/<case-id>/`（不入库）。
+> **路径速记**：场景 = `workspace/<scenario-id>/`（`source/` `optimized/` `ledger/` 三层）；条目 = `cases/<entry-id>.md` + `cases/index.md`；校准台账 `workspace/_shared/calibration.md`（不入库）。
 
 ---
 
-## 1. 案例库定位与入库纪律
+## 0. 场景 vs 条目：两层定义与关系
 
-**定位**：`cases/` 是全工程**入库、共享**的案例知识库，随根仓库版本化，供后续 Agent 复现、对比与复用；`cases/index.md` 是全仓可检索的索引。
+**工作现场的「场景」与案例库的「条目」不是一回事，两个词不可混用**：
+
+| 层 | 术语 | 定义 | 例 | 位置 |
+| :--- | :--- | :--- | :--- | :--- |
+| 工作现场 | **场景（scenario）** | 一次优化战役：硬件 × 模型 × 变体 × 主攻方向 | `2x910B-dsv41-flash-rocm-net` | `workspace/<scenario-id>/` |
+| 可复用知识 | **条目（entry）** | 一个可复用技术条目（优化手段 / 缺陷修复 / 方法论） | `op-fusion` / `net-transfer-fusion` | `cases/<entry-id>.md`（`cases/` = 案例库，收录条目） |
+
+**关系**：
+
+1. **一个场景的迭代产出 0..N 个条目**：无效果 / 未过验收态门禁则 0 个；有效果且过门禁才沉淀。
+2. **一个条目可被多个场景引用**：可复用技术不绑定单一现场，条目是共享知识。
+3. **条目元信息头必须记录来源场景**（`scenario-id`，可多个），便于从条目回溯到现场台账。
+4. **过程 vs 沉淀分离**：场景是过程留痕（`workspace/`，不入库），条目是入库结论（`cases/`，入库）。workspace 语境一律称「场景」（`scenario-id`），知识库语境一律称「条目」（`entry-id`）。
+
+---
+
+## 1. 条目库定位与入库纪律
+
+**定位**：`cases/` 是全工程**入库、共享**的条目知识库（案例库），随根仓库版本化，供后续 Agent 复现、对比与复用；`cases/index.md` 是全仓可检索的索引。
 
 **入库纪律（Agent 自主沉淀）**：
 
-1. **仅「优化有效果且过验收态门禁」的案例入库**：入库门槛 = 轨道 A（相应档位 L1/L2/L3）与轨道 B（收益 / Goodput / 长稳）双轨通过，且环境冻结可复现（见 [门禁规则](../gates/README.md)）。
-2. **由 Agent 自主沉淀**：不做脚手架、不做模板文件；案例验收通过后由 Agent 按 §2 规范直接写 `cases/<case-id>.md`，并同步更新 `cases/index.md`。
-3. **失败 / 反向结果不入库**：以「反模式」写进案例 md 第 6 节（供他人规避），或就地记入 `workspace/ledger/<case-id>/summary.md` 的反模式清单；不占 `cases/index.md` 行位。
-4. **交付物不入库**：patch、profiling、门禁产物一律留 `workspace/ledger/<case-id>/`（不入库）；案例 md 只写「关键 diff 摘录」与「证据路径引用」。
-5. **一案例一个 md**：`cases/<case-id>.md`，`case-id` 全局唯一、与 `workspace/ledger/<case-id>/` 同名；一个案例跨多个模型 / 硬件时拆为多个 md。
+1. **仅「优化有效果且过验收态门禁」的条目入库**：入库门槛 = 轨道 A（相应档位 L1/L2/L3）与轨道 B（收益 / Goodput / 长稳）双轨通过，且环境冻结可复现（见 [门禁规则](../gates/README.md)）。
+2. **由 Agent 自主沉淀**：不做脚手架、不做模板文件；条目验收通过后由 Agent 按 §2 规范直接写 `cases/<entry-id>.md`，并同步更新 `cases/index.md`。
+3. **失败 / 反向结果不入库**：以「反模式」写进条目 md 第 6 节（供他人规避），或就地记入 `workspace/<scenario-id>/ledger/summary.md` 的反模式清单；不占 `cases/index.md` 行位。
+4. **交付物不入库**：patch、profiling、门禁产物一律留 `workspace/<scenario-id>/ledger/`（不入库）；条目 md 只写「关键 diff 摘录」与「证据路径引用」。
+5. **一条目一个 md**：`cases/<entry-id>.md`，`entry-id` 全局唯一；一条目跨多个模型 / 硬件时拆为多个 md。
 
 ---
 
-## 2. 案例 md 规范（7 节）
+## 2. 条目 md 规范（7 节）
 
 ### 2.1 总则
 
-- 一个案例一个 md：`cases/<case-id>.md`（平铺，无子目录）。
+- 一个条目一个 md：`cases/<entry-id>.md`（平铺，无子目录）。
 - 7 节 = **元信息头 + 6 节**（背景 / 目标 / 诊断与归因 / 修改方案 / 验证方案与结果 / 复盘与可复用经验）。
 - 必填项以「★必填」标注；其余允许「—」占位，但**禁止删除节**。
+- **元信息头必填「来源场景」**（`scenario-id`，可多个）：记录条目产出的现场，台账见对应 `workspace/<scenario-id>/ledger/`。
 
 ### 2.2 完整模板
 
 ```markdown
-# 案例：<case-id>
+# 条目：<entry-id>
 
 ## 元信息头（★必填）
 
 | 字段 | 值 |
 | :--- | :--- |
-| case-id | `<唯一标识，如 910b3-<模型>-<瓶颈>-<方法>>` |
+| entry-id | `<唯一标识，如 op-fusion / net-transfer-fusion>` |
+| 来源场景 | `<scenario-id>`（可多个，如 `2x910B-dsv41-flash-rocm-net`；过程台账在 `workspace/<scenario-id>/ledger/`，不入库） |
 | 模型@硬件 | `<模型名>@<910B3 / 950PR / 950DT>` |
-| 状态 | `<成功 / 部分>`（未达标 / 已回退案例不入库） |
+| 状态 | `<成功 / 部分>`（未达标 / 已回退条目不入库） |
 | 日期 | `<YYYY-MM-DD>` |
 | 引擎 + commit | `<引擎名 @ commit>`（改造前基线 commit 与改造后 commit 都要） |
 | 配套版本 | `<CANN ↔ torch_npu ↔ PyTorch ↔ 驱动>`（与台账冻结指纹一致） |
 | 硬件代际 | `<910B3（A2/A3）/ 950PR / 950DT（A5/arch35）>` |
 | 干预阶梯 | `<1~5>`（可多个，按主次排序） |
-| 关联台账路径 | `workspace/ledger/<case-id>/`（不入库） |
+| 关联台账路径 | `workspace/<scenario-id>/ledger/`（与「来源场景」对应，不入库） |
 
 ## 1. 背景（★必填）
 <设备与并行形态、模型结构特征向量（注意力族 / 前馈形态 / 数值格式）、负载与 SLO、
@@ -61,7 +81,7 @@
 
 ## 4. 修改方案
 <所落阶梯与理由；被排除的更优 ROI 选项；关键 diff 摘录（完整 patch 在台账）；
-  落点文件与接口（workspace/optimized/ 或 workspace/source/<engine>/）。>
+  落点文件与接口（workspace/<scenario-id>/optimized/ 或 workspace/<scenario-id>/source/<engine>/）。>
 
 ## 5. 验证方案与结果（★必填）
 <轨道 A：相应档位 L1/L2/L3 + 阈值 + 实测；轨道 B：相对基线收益 / 开环 Goodput / 边界 /
@@ -69,19 +89,20 @@
 
 ## 6. 复盘与可复用经验
 <预测 vs 实测偏差归因；可复用模式与反模式清单；缩放因子（回写
-  workspace/ledger/_shared/calibration.md）；遗留问题。>
+  workspace/_shared/calibration.md）；遗留问题。>
 ```
 
 ### 2.3 最小示例（占位符）
 
 ```markdown
-# 案例：910b3-qwen2.5-7b-bwutil-fusedrope
+# 条目：910b3-qwen2.5-7b-bwutil-fusedrope
 
 ## 元信息头
 
 | 字段 | 值 |
 | :--- | :--- |
-| case-id | `910b3-qwen2.5-7b-bwutil-fusedrope` |
+| entry-id | `910b3-qwen2.5-7b-bwutil-fusedrope` |
+| 来源场景 | `910b3-qwen2.5-7b-bwutil` |
 | 模型@硬件 | `Qwen2.5-7B@910B3` |
 | 状态 | `成功` |
 | 日期 | `<YYYY-MM-DD>` |
@@ -89,7 +110,7 @@
 | 配套版本 | `<CANN x.y ↔ torch_npu a.b.c ↔ PyTorch p.q ↔ 驱动 d.e.f>` |
 | 硬件代际 | `910B3（A2/A3）` |
 | 干预阶梯 | `4` |
-| 关联台账路径 | `workspace/ledger/910b3-qwen2.5-7b-bwutil-fusedrope/` |
+| 关联台账路径 | `workspace/910b3-qwen2.5-7b-bwutil/ledger/` |
 
 ## 1. 背景
 <8 卡 TP8，GQA 结构；离线预填负载 P50/P95 = <...>；实测 Decode BW_util = 42%（相对 P_eff/BW_eff 口径）。>
@@ -102,22 +123,22 @@
 
 ## 4. 修改方案
 <阶梯 4，AscendC 融合 RoPE + KV write 单 kernel；排除阶梯 2（无现成后端）；
-  diff 摘录：<...>；落 workspace/optimized/kernels/fused_rope_kvwrite/。>
+  diff 摘录：<...>；落 workspace/910b3-qwen2.5-7b-bwutil/optimized/kernels/fused_rope_kvwrite/。>
 
 ## 5. 验证方案与结果
 <轨道 A：L2 余弦 + 最大误差在噪声底内；轨道 B：BW_util 42%→78%，TPOT <...>；
   对照表 + 复现命令。>
 
 ## 6. 复盘与可复用经验
-<偏差归因：<...>；反模式：<...>；缩放因子 α = <...> 已回写 _shared/calibration.md；遗留：950 需重标。>
+<偏差归因：<...>；反模式：<...>；缩放因子 α = <...> 已回写 workspace/_shared/calibration.md；遗留：950 需重标。>
 ```
 
 ---
 
-## 3. 台账规范（8 项）
+## 3. 场景台账规范（8 项）
 
-> **位置**：`workspace/ledger/<case-id>/`（不入库、单份共享、按案例隔离）；`_shared/` 跨案例共享。
-> **职责**：台账是**过程留痕**（决策依据与证据链），案例 md 是**沉淀结论**——两者互为引用，不重复。
+> **位置**：`workspace/<scenario-id>/ledger/`（不入库、**每场景一份**、自包含、场景间并发安全）；`workspace/_shared/` 跨场景共享。
+> **职责**：台账是**过程留痕**（决策依据与证据链），条目 md 是**沉淀结论**——两者互为引用，不重复。
 
 | 文件 | 职责 | 关键字段 |
 | :--- | :--- | :--- |
@@ -128,7 +149,7 @@
 | `04-bootstrap.md` | ⑤ 初始建议启动 | 首个假设与对应阶梯、预期收益、首轮实验命令 |
 | `iterations/it-NNN.md` | ⑥ 每轮迭代记录 | 字段顺序见下 |
 | `state.json` | ⑦ 轻量机器可读状态 | 字段清单见下 |
-| `summary.md` | ⑧ 收尾结论 | best 结果 / ROI 成本收益 / 反模式清单 / 有效·无效·失败方法 / 是否沉淀 case |
+| `summary.md` | ⑧ 收尾结论 | best 结果 / ROI 成本收益 / 反模式清单 / 有效·无效·失败方法 / 是否沉淀条目（entry-id） |
 
 **`iterations/it-NNN.md` 字段顺序（逐轮，按序记录）**：
 
@@ -147,7 +168,7 @@
 
 ```json
 {
-  "case": "<case-id>",
+  "scenario": "<scenario-id>",
   "freeze": { "cann": "", "torch_npu": "", "pytorch": "", "driver": "", "engine_commit": "", "lock_freq_mhz": 0 },
   "best_metric": { "metric": "", "value": 0.0, "iteration": "it-NNN" },
   "iterations": [{ "id": "it-NNN", "hypothesis": "", "direction": "positive|negative|flat", "decision": "keep|revert|continue" }],
@@ -160,28 +181,28 @@
 
 ---
 
-## 4. workspace 落点规范与串行化约定
+## 4. 场景工作区规范（workspace）
 
-> **结构**：`workspace/optimized/`（自研产物）｜ `workspace/source/<repo>/`（引擎克隆）｜ `workspace/ledger/<case-id>/`（过程台账）。`repos/refs/` 只读参考不变。
+> **结构**：`workspace/<scenario-id>/optimized/`（自研产物）｜ `workspace/<scenario-id>/source/<repo>/`（引擎克隆）｜ `workspace/<scenario-id>/ledger/`（过程台账）。`repos/refs/` 只读参考不变。
 
 ### 4.1 落点规范（由原 `src/README.md` 迁入）
 
-- **`workspace/optimized/plugins/<engine>/<plugin_name>/`** —— 阶梯 3：out-of-tree 插件。基于 `vllm_ascend` / `vllm` 的 entry_points 机制外挂（新模型注册、自定义 QuantizationConfig、自定义 AttentionBackend）；插件须可独立安装 / 导入，**不得要求修改引擎源码**。
-- **`workspace/optimized/kernels/<op_name>/`** —— 阶梯 4：独立算子工程（Triton-Ascend / AscendC / TileLang / PyPTO）。**每算子子目录强制包含**：实现文件（kernel 源码）+ `test_op.py`（单测，正确性校验）+ `benchmark_op.py`（`msprof op` 微基准）。
-- **`workspace/optimized/tools/<tool_name>/`** —— 辅助工具：Golden logits 采集脚本、权重 `ND ↔ NZ` 离线重排（Repack）脚本、msprof 解析辅助工具。
+- **`workspace/<scenario-id>/optimized/plugins/<engine>/<plugin_name>/`** —— 阶梯 3：out-of-tree 插件。基于 `vllm_ascend` / `vllm` 的 entry_points 机制外挂（新模型注册、自定义 QuantizationConfig、自定义 AttentionBackend）；插件须可独立安装 / 导入，**不得要求修改引擎源码**。
+- **`workspace/<scenario-id>/optimized/kernels/<op_name>/`** —— 阶梯 4：独立算子工程（Triton-Ascend / AscendC / TileLang / PyPTO）。**每算子子目录强制包含**：实现文件（kernel 源码）+ `test_op.py`（单测，正确性校验）+ `benchmark_op.py`（`msprof op` 微基准）。
+- **`workspace/<scenario-id>/optimized/tools/<tool_name>/`** —— 辅助工具：Golden logits 采集脚本、权重 `ND ↔ NZ` 离线重排（Repack）脚本、msprof 解析辅助工具。
 
 **交付物落点军规**：
 
-1. 阶梯 3/4 的产出**优先落 `workspace/optimized/`**：可独立构建、测试、随根仓库版本化。
-2. 只有必须修改引擎源码才能实现的目标，才落 `workspace/source/<engine>/`，且必须用 `bash scripts/manage_repos.sh export-patch` 导出 patch 到 `workspace/ledger/<case>/patches/`（不入库），交付以 patch 为准。
+1. 阶梯 3/4 的产出**优先落 `workspace/<scenario-id>/optimized/`**：可独立构建、测试、随根仓库版本化。
+2. 只有必须修改引擎源码才能实现的目标，才落 `workspace/<scenario-id>/source/<engine>/`，且必须用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出 patch 到 `workspace/<scenario-id>/ledger/patches/`（不入库），交付以 patch 为准。
 3. `repos/refs/` 只读，任何改动都禁止。
 
-### 4.2 串行化约定（单份共享 workspace）
+### 4.2 场景隔离与并发
 
-1. **同一时刻只跑一个案例**：workspace 是单份共享目录，不建 git、不入库；并发实验会互相污染台账与 `optimized/` 产物。
-2. **台账按 `case-id` 隔离**：每个案例独占 `workspace/ledger/<case-id>/`；严禁跨案例写对方台账。
-3. **`_shared/calibration.md` 跨案例共享**：`P_eff` / `BW_eff` / α / β / 锁频命令 / 配套版本按 `<模型>@<硬件>` 分节，所有案例只读复用；复测由持卡人更新。
+1. **每场景独立一套 `workspace/<scenario-id>/{source,optimized,ledger}`**：`source/` 与 `optimized/` 按场景隔离，台账按 `scenario-id` 隔离；**场景之间可并发，互不污染**。
+2. **严禁跨场景写对方目录**：只读自己的 `workspace/<scenario-id>/`，避免并发写同一份 `source/` / `optimized/` / `ledger/`。
+3. **唯一共享是 `workspace/_shared/calibration.md`**：`P_eff` / `BW_eff` / α / β / 锁频命令 / 配套版本按 `<模型>@<硬件>` 分节，所有场景只读复用；**只追加新分节，避免并发写同一段**；复测由持卡人更新。
 
 ### 4.3 workspace 不入库说明
 
-`workspace/` 整体**不入库、单份共享、暂不建 git**（与 `repos/` 的克隆仓策略相同，仅保留占位）；需要落库的内容以**案例 md**（`cases/<case-id>.md`）形态沉淀；补丁与 profiling 留 `workspace/ledger/<case>/patches/` 与 `workspace/ledger/<case>/profiling/`（均不入库）。
+`workspace/` 整体**不入库、暂不建 git**（与 `repos/` 的克隆仓策略相同，仅保留占位）；需要落库的内容以**条目 md**（`cases/<entry-id>.md`）形态沉淀；补丁与 profiling 留 `workspace/<scenario-id>/ledger/patches/` 与 `workspace/<scenario-id>/ledger/profiling/`（均不入库）。
