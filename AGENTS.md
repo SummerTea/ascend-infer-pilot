@@ -99,7 +99,7 @@
 通用探针命令（换机 / 换版本后重跑，把结果更新进 `AGENTS.md.local`）：
 
 ```
-ssh -i ~/.ssh/910b_ed25519 -o IdentitiesOnly=yes -p 22022 root@<服务器IP>
+ssh -i ~/.ssh/<密钥> -o IdentitiesOnly=yes -p <端口> root@<服务器IP>
 npu-smi info
 npu-smi info -t topo
 source /usr/local/Ascend/ascend-toolkit/set_env.sh

@@ -10,7 +10,7 @@
 
 | 层 | 数量 | 目录 / 名称 | 来源 | 覆盖能力 |
 | :--- | :--- | :--- | :--- | :--- |
-| **自研知识** | 6 篇已并入 `docs/01~04`（主机环境说明在 `AGENTS.md.local`，不入库） | 算子开发与审查 → [01 阶梯 4 实操](01-pipeline-and-ledger.md)；量化与门禁 → [01 J6 实操](01-pipeline-and-ledger.md)；msprof 采集与归因 → [02 msprof 实操](02-ascend-diagnosis-sop.md)；HCCL 排障 → [02 HCCL 实操](02-ascend-diagnosis-sop.md)；CUDA→torch_npu 迁移与图模式 → [03 迁移与图模式](03-ascend-hardware-and-engines.md)；vllm-ascend 接入 → [03 接入与融合算子](03-ascend-hardware-and-engines.md) | 自建（本工程，已内化） | 原 7 篇自研技能并入 docs 对应章节，保留全部可执行内容；执行口径一律以 `docs/` 为准 |
+| **自研知识** | 6 篇已并入 `docs/01~04`（主机环境说明在 `AGENTS.md.local`，不入库） | 算子开发与审查 → [01 阶梯 4 实操](01-pipeline-and-ledger.md)；量化与门禁 → [01 J6 实操](01-pipeline-and-ledger.md)；msprof 采集与归因 → [02 msprof 实操](02-ascend-diagnosis-sop.md)；HCCL 排障 → [02 HCCL 实操](02-ascend-diagnosis-sop.md)；CUDA→torch_npu 迁移与图模式 → [03 迁移与图模式](03-ascend-hardware-and-engines.md)；vllm-ascend 接入 → [03 接入与融合算子](03-ascend-hardware-and-engines.md) | 自建（本工程，已内化） | 原 7 篇自研技能：**6 篇**并入 `docs/01~04`，**1 篇**（主机环境）转为 `AGENTS.md.local`；保留全部可执行内容，执行口径一律以 `docs/` 为准 |
 | **vendored** | 7 | `evalscope` | modelscope/evalscope | J6 双轨：精度评测（MMLU/GSM8K/ARC，可打 OpenAI 兼容端点）+ 性能压测（TTFT/TPOT/吞吐） |
 | | | `mooncake-api` | kvcache-ai/Mooncake | Mooncake Store / Transfer Engine Python API（昇腾传输支持） |
 | | | `mooncake-troubleshoot` | kvcache-ai/Mooncake | Mooncake 部署排障（服务/RDMA/env/注册内存/日志） |
@@ -51,6 +51,8 @@ engines   | cann-recipes-infer      | https://gitcode.com/cann/cann-recipes-infe
 engines   | mindie-llm              | https://gitcode.com/Ascend/MindIE-LLM.git                       | master
 engines   | sglang                  | https://github.com/sgl-project/sglang.git                       | main
 ```
+
+> **权威指向**：源 url / branch 以 `bash scripts/sync_ascend_skills.sh --list` 为**唯一权威**，本表仅作索引；若不一致以脚本为准。
 
 **覆盖能力简表**：
 
@@ -134,7 +136,7 @@ engines   | sglang                  | https://github.com/sgl-project/sglang.git 
 | :--- | :--- | :--- | :--- |
 | **A. GitCode 权威源与镜像** | `cannbot-skills` / `model-agent` / `msmodelslim` / `msagent` | GitCode 权威、GitHub 是镜像（`Ascend/agent-skills` GitHub 版 2026-05 后停更）；取用走 `awesome-ascend-skills` 的 external 镜像（有 CI 同步）；**cannbot `plugins-*` 正在迁移，入口会变**。`sync_ascend_skills.sh --category all` 重同步 | 季度 |
 | **B. 环境硬绑定复测（最高风险）** | 量化/性能类技能（`quantization-dev`、`fla-ascend-performance`、tilelang-perf 等均明示「换 CANN/torch_npu/芯片必须复测」） | **每次升级 CANN / torch_npu / 芯片后重跑验证 SOP**；把「已核验到 CANN x.y + torch_npu a.b.c」记入 `cases/<模型>@<硬件>/calibration.md` 台账 | 每次环境升级 |
-| **C. 版本配套表** | CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK） | **严格对应、不可混装**；用 `migration-ascend-torchnpu-skills-environment-setup` 的配套表；910B3 基准：`npu-smi 25.5.1` | 每次建环境 |
+| **C. 版本配套表** | CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK） | **严格对应、不可混装**；用 `migration-ascend-torchnpu-skills-environment-setup` 的配套表；910B3 基准工具版本见 `AGENTS.md.local` | 每次建环境 |
 | **D. 需自建并长期维护** | ① **950 代际约束**（SIMT / HiF8 / UB Bank 重写 / CCU / msprof 指标差异）；② **本机 msprof 基线**（P_eff / BW_eff 实测 + 锁频命令）；③ **docs/01~04 自研知识章节** | 950 约束与基线写入本工程 `docs/` + `cases/` 台账；自研知识章节随每次实验迭代 | 持续 |
 
 ---
@@ -164,7 +166,7 @@ engines   | sglang                  | https://github.com/sgl-project/sglang.git 
 | :--- | :--- | :--- |
 | `kernel-microbenchmark`（vllm 上游） | 仅 NVIDIA-CUDA 口径 | 主推 **CUPTI** 计时——昇腾侧改用 `msprof` / `msprof op`；**CUPTI 对位是 MSPTI 但本工程不使用其计时**；随附 `benchmarks/*.py` 为 CUDA 脚本，直接跑会失败。取其方法论（正确性先于计时、多后端、SOL sanity） |
 | `triton-kernel-writing`（vllm 上游） | 半相关（方法论可迁移） | 调优旋钮 `num_warps` / `num_stages` **在昇腾不可用**（见 [01 阶梯 4 实操](01-pipeline-and-ledger.md)）；Triton 语义（类型提升/整除/广播/边界）与生成代码检视方法可迁移到 Triton-Ascend |
-| `debug-distributed-hang`（sglang 上游） | 半相关（方法论可迁移） | `cuda-gdb` / `py-spy` 为 CUDA 侧手段；昇腾侧以 HCCL / `hccl_test` 与 `msprof` 通信分析为主（见 [02 HCCL 实操](02-ascend-diagnosis-sop.md)）；rank 状态发散与二分定位法通用 |
+| `debug-distributed-hang`（sglang 上游） | 半相关（方法论可迁移） | `cuda-gdb` / CUDA coredump / `NCCL_DEBUG` 为 CUDA 侧手段（需替换）；**`py-spy` 为通用 Python 栈采样器，昇腾侧仍可用**（SGLang watchdog 即依赖 `py-spy dump`）；昇腾通信分析以 HCCL / `hccl_test` / `msprof` 为主（见 [02 HCCL 实操](02-ascend-diagnosis-sop.md)）；rank 状态发散与二分定位法通用 |
 | `kl-consistency-test`（sglang 上游） | 半相关（方法论可迁移） | prefill/decode 双路径 logprob KL 方法通用（J6 轨道 A）；可直接用于 SGLang-Ascend / vllm-ascend 端点 |
 | `evalscope`（modelscope） | 半相关（方法论可迁移） | 评测可打 OpenAI 兼容端点（vllm-ascend 直接可用）；性能压测数值口径须换算为 msprof 设备侧口径 |
 | `mooncake-api`（kvcache-ai/Mooncake） | 昇腾相关 | Mooncake 支持昇腾传输（vllm-ascend 内置 Mooncake KV connector 参考落点）；Store / Transfer Engine API 语义通用 |

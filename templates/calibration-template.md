@@ -11,8 +11,8 @@
 | torch_npu 版本 | `<pip show torch-npu>` |
 | PyTorch 版本 | `<pip show torch>` |
 | 驱动 HDK 版本 | `<npu-smi / dmesg 核对>` |
-| npu-smi 版本 | `25.5.1`（评测服务器 10.19.93.115） |
-| 服务器 / 拓扑 | `10.19.93.115`（SSH 端口 22022），8×910B3，HBM 64GB/卡；HCCL 卡间拓扑 |
+| npu-smi 版本 | `<npu-smi 版本>`（见 `AGENTS.md.local`） |
+| 服务器 / 拓扑 | `<服务器 IP>`（SSH 端口 `<端口>`），`<卡型 × 数>`、HBM `<容量>`/卡；卡间拓扑 `<HCCL 或 RoCE>` |
 
 ## 二、P_eff 标定（理想大 GEMM 微基准）
 
