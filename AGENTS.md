@@ -1,4 +1,4 @@
-# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 2）
+# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 3）
 
 ## 0. 定位与入口导航
 

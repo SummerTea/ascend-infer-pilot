@@ -31,8 +31,8 @@ npu-smi info -t topo
 
 ```
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-all_reduce_perf -b 8 -e 1G -f 2 -g 8
-alltoall_perf -b 8 -e 1G -f 2 -g 8    # 参数以 hccl_test 为准，须上机核实
+all_reduce_perf -b 8 -e 1G -f 2 -g 8   # 二进制名以 hccl_test 实际为准（ls $ASCEND_HOME/tools/hccl_test 确认，可能为 all_reduce_test），须上机核实
+alltoall_perf -b 8 -e 1G -f 2 -g 8    # 二进制名以 hccl_test 实际为准（ls $ASCEND_HOME/tools/hccl_test 确认，可能为 alltoall_test），须上机核实
 ```
 
 **完成标准**：得到 8 卡 AllReduce/AlltoAll 的 busbw，与同拓扑存档基线对比；偏差 > 10% 先查链路/亲和/驱动，不进入瓶颈归因。
@@ -82,7 +82,7 @@ MoE EP 算子从 DeepEP 迁 CAM（昇腾 EP 算子语义），集合通信从 NC
 | 场景 | 命令 | 判定 |
 | :--- | :--- | :--- |
 | 拓扑 | `npu-smi info -t topo` | 单机 8 卡全互联 = **HCCS** |
-| 通信基线 | `all_reduce_perf -b 8 -e 1G -f 2 -g 8` | 与同拓扑基线比，偏差 > 10% 先修硬件 |
+| 通信基线 | `all_reduce_perf -b 8 -e 1G -f 2 -g 8`（二进制名以 `ls $ASCEND_HOME/tools/hccl_test` 为准，须上机核实） | 与同拓扑基线比，偏差 > 10% 先修硬件 |
 | 通信瓶颈 | msprof timeline 的 exposed_comm | 暴露时间在关键路径占比高才是瓶颈（「通信总耗时 > 25%」被计算覆盖则不是） |
 | RoCE 拥塞 | `ethtool -S <eth> \| grep pause` | PFC storm 计数疯跳 → 查交换机 PFC/ECN |
 | PD 传输 | 引擎 KV 传输指标 + RDMA 计数器 | 小包延迟主导 → 攒批大块；误码 → 换线缆/模块 |
@@ -90,7 +90,7 @@ MoE EP 算子从 DeepEP 迁 CAM（昇腾 EP 算子语义），集合通信从 NC
 ## 常见坑
 
 1. **把单机 HCCS 当 RoCE 排查**：本机 8 卡全互联实测为 HCCS（非 RoCE）；RoCE 只出现在跨机，先 `npu-smi info -t topo` 判读再选探针。
-2. **忘了 `source set_env.sh`**：`hccl_test` / `all_reduce_perf` 不在默认 PATH，直接调用报 `command not found`。
+2. **忘了 `source set_env.sh`**：`hccl_test` / `all_reduce_perf`（二进制名以 hccl_test 实际为准，须上机核实）不在默认 PATH，直接调用报 `command not found`。
 3. **直接对公开带宽数字比**：busbw 必须与**同拓扑**历史基线比；低于基线 10% 以上先查链路/NUMA/亲和。
 4. **只靠 rank 间耗时方差判断专家倾斜**：热门专家倾斜须直接看路由统计（SGLang `--expert-distribution-recorder-mode stat`、vLLM EPLB 统计），耗时方差只能作辅证。
 5. **KV page 逐块拷贝**：小包传输被延迟主导（KB 级远低于峰值），应攒批/合并为连续大块再传。

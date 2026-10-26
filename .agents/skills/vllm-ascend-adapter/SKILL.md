@@ -28,14 +28,14 @@ vllm-ascend 是本工程主力引擎（真机当前运行 `vllm-ascend:v0.21.0rc
 
 ### 2. 模型接入（register_model + 权重名映射）
 
-- 挂载点：`vllm/model_executor/models/registry.py` 的 `@ModelRegistry.register_model("Arch", "path.to.Model")`。
+- 挂载点：`vllm/model_executor/models/registry.py` 的 `ModelRegistry.register_model("Arch", "my_pkg.models:MyModel")`——**非装饰器**（`register_model` 返回 `None`），须先 `from vllm.model_executor.models.registry import ModelRegistry`，字符串形式必须 **`<module>:<class>`（冒号）**；以 `repos/targets/vllm/` 实际 pin 版本为准（须上机核实）。
 - 权重名映射：safetensors 键名 ↔ 建模层参数名逐层对齐；`config.json` 不被识别的字段（`tie_word_embeddings`、RoPE scaling、MoE 路由、量化 scale 布局）单独处理。
 
 **完成标准**：模型类加载成功，权重名映射无遗漏（加载后无「weight not found」类告警，具体报错形态须上机核实）；非标结构判定落阶梯 3/4。
 
 ### 3. 注意力后端注册（勿臆造类名）
 
-- 挂载点：vLLM `vllm/v1/attention/backends/registry.py`，`@register_backend(AttentionBackendEnum.CUSTOM, "ASCEND")`，实现为 **`AscendAttentionBackendImpl`**。
+- 挂载点：vLLM `vllm/v1/attention/backends/registry.py` 的 `register_backend`——**`class_path=None` 才返回装饰器**；正确写法二选一：装饰器 `@register_backend(AttentionBackendEnum.CUSTOM)`（直接修饰实现类，class_path 自动生成），或命名注册 `register_backend("ASCEND", "my_pkg.attn:AscendAttentionBackend")`。实现为 **`AscendAttentionBackendImpl`**。
 - 底层调用昇腾融合注意力 `npu_fused_infer_attention_score`；按平台/头维/KV dtype 分派。
 
 **完成标准**：服务日志/代码路径确认走了 ASCEND 后端而非 fallback（如 naive attention）；`msprof op` 可见融合注意力算子生效。**禁止**臆造昇腾注意力类名——昇腾侧无 FlashAttention 系类名，实现是 `AscendAttentionBackendImpl`。

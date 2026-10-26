@@ -24,7 +24,9 @@ description: 昇腾唯一可信测量的采集与归因技能——msprof timeli
 
 ```
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"
+# msprof op 以位置参数指定应用（官方示例：msprof op python3 test_xxx.py）
+msprof op python3 -c "import torch, torch_npu; torch.npu.init(); torch.empty(1, device='npu:0')"
+# --output / --application 等选项以本机 msprof op -h 为准（CANN 9.0.0-beta.1），须上机核实
 ```
 
 **完成标准**：`/tmp/probe` 下生成 profile 产物且无权限/驱动报错；若失败先修权限与配套，不进入采集。
@@ -40,7 +42,7 @@ msprof --output=/tmp/llm_trace --application="python3 run_serve_or_step.py"   # 
 ### 3. 算子级微基准（L3 微架构）
 
 ```
-msprof op --output=/tmp/op_prof --application="python3 benchmark_op.py"
+msprof op python3 benchmark_op.py   # 位置参数形式；--output 等选项以本机 msprof op -h 为准（CANN 9.0.0-beta.1），须上机核实
 ```
 
 **完成标准**：得到 Top-N 算子耗时/占比/有效带宽；`benchmark_op.py` 必须预热到稳态、输出张量显式零初始化（防 RMW 掩盖）。
@@ -76,7 +78,7 @@ msprof-analyze calibrate_npu_gpu --gpu-profile <nsys SQLite> --npu-profile <NPU 
 | 场景 | 命令 | 判定 |
 | :--- | :--- | :--- |
 | 端到端 trace | `msprof --output=<dir> --application="<cmd>"` | 产物可打开、覆盖稳态 |
-| 算子微基准 | `msprof op --output=<dir> --application="python3 benchmark_op.py"` | Top-N 主核占比、有效带宽 |
+| 算子微基准 | `msprof op python3 benchmark_op.py`（`--output`/`--application` 等选项以 `msprof op -h` 为准，须上机核实） | Top-N 主核占比、有效带宽 |
 | 五表过滤 | — | **占比 ≥ 1%** 才进入归因；Top-N 覆盖 ≥ 80% |
 | 下发气泡 | timeline 计算 Bubble | **> 20% 严重**（优秀 < 5%）；前提是负载打满 |
 | 内存墙 | `msprof op` 有效带宽 | 带宽利用率 ≥ 75%~90% 且 `实际字节/bytes_min ≈ 1.0` 才是真带宽极限；比值 > 1 是未融合 |

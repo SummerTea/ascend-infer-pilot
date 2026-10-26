@@ -61,7 +61,7 @@ L4 互联: 互联与分布式通信级 (Interconnect & Collective Level)
 ```bash
 # 0) 健康检查：8 卡都在、无降速、无 ECC 类告警
 npu-smi info
-npu-smi topo                      # HCCS 拓扑矩阵（确认 910B3 单机 8 卡互联形态）
+npu-smi info -t topo                # HCCS 拓扑矩阵（确认 910B3 单机 8 卡互联形态）
 
 # 1) 算力可达 P_eff：大 GEMM（BF16/FP8）msprof op 校准 → α = P_eff / P_peak
 msprof op --output=/tmp/gemm_calib --application="python3 calib_gemm.py"
@@ -179,7 +179,7 @@ flowchart TD
 | :--- | :--- |
 | **负载/压测** | `vllm bench serve` / `vllm bench throughput`（固定 request-rate、长度分布）；`evalscope perf`；`AISBench`。纪律：固定种子、warmup、重复 ≥3、报 P50/P95/P99 与 SLO 下 goodput |
 | **引擎指标** | vllm-ascend：`vllm:request_queue_time_seconds` / `request_prefill_time_seconds` / `kv_cache_usage_perc` / `num_preemptions` / `prefix_cache_queries/hits`；SGLang-Ascend：`cache_hit_rate` / `num_retracted_reqs` / `kv_transfer_speed_gb_s` |
-| **硬件/监控** | `npu-smi info` / `npu-smi topo` / `npu-smi set`（锁频）；DCMI（对标 NVML）；`npu-exporter` → Prometheus；`msMonitor` |
+| **硬件/监控** | `npu-smi info` / `npu-smi info -t topo` / `npu-smi set`（锁频）；DCMI（对标 NVML）；`npu-exporter` → Prometheus；`msMonitor` |
 | **通信** | `hccl_test`（all_reduce_perf / alltoall_perf）；HCCL env（连接超时 / buffer 大小）；RoCE 探针：`ethtool -S`（rx/tx_prioN_pause、PFC storm 计数）、光模块误码 |
 | **Profiler 权限** | 先跑最小 `msprof op` 探针确认硬件计数器可读（防假活环境）；profiler 采集档位基线与优化版必须一致 |
 | **引擎级旋钮（先于改 kernel）** | vllm-ascend：`--max-num-seqs`、`--max-num-batched-tokens`、`--enable-chunked-prefill`、`--enable-prefix-caching`、`--kv-cache-dtype`、`--attention-backend`、`--tensor-parallel-size`、图捕获分档（`npugraph_ex` 路径）；SGLang-Ascend：`--mem-fraction-static`、`--chunked-prefill-size`、radix cache 开关 |

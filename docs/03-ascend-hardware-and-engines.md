@@ -59,7 +59,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # 1) 8 卡健康与拓扑
 npu-smi info
-npu-smi topo
+npu-smi info -t topo
 
 # 2) msprof 最小探针（确认硬件计数器可读，防假活环境；在已装 torch_npu 的容器内执行）
 msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"
@@ -84,8 +84,8 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
 | 挂载点 | 位置（昇腾侧） | 用途 |
 | :--- | :--- | :--- |
-| `register_model` | vLLM `vllm/model_executor/models/registry.py`（`@ModelRegistry.register_model("Arch", "path.to.Model")`） | 挂载非标模型结构（阶梯 3/4） |
-| `register_backend` / `AttentionBackend` | vLLM `vllm/v1/attention/backends/registry.py`（`@register_backend(AttentionBackendEnum.CUSTOM, "ASCEND")`，实现为 `AscendAttentionBackendImpl`） | 按平台/头维/KV dtype 分派 FIA（AscendAttentionBackend / `npu_fused_infer_attention_score`）等昇腾后端 |
+| `register_model` | vLLM `vllm/model_executor/models/registry.py`（`ModelRegistry.register_model("Arch", "my_pkg.models:MyModel")`，**非装饰器**：`register_model` 返回 `None`，字符串须 `<module>:<class>` 冒号形式） | 挂载非标模型结构（阶梯 3/4；以 `repos/targets/vllm/` 实际 pin 版本为准，须上机核实） |
+| `register_backend` / `AttentionBackend` | vLLM `vllm/v1/attention/backends/registry.py`（**`class_path=None` 才返回装饰器**：`@register_backend(AttentionBackendEnum.CUSTOM)` 修饰实现类，或命名注册 `register_backend("ASCEND", "my_pkg.attn:AscendAttentionBackend")`，实现为 `AscendAttentionBackendImpl`） | 按平台/头维/KV dtype 分派 FIA（AscendAttentionBackend / `npu_fused_infer_attention_score`）等昇腾后端 |
 | `register_quantization_config` | vLLM `vllm/model_executor/layers/quantization/__init__.py`（继承 `QuantizationConfig`） | 权重加载期转置/重排与低比特路径（ATB 量化解码 / msmodelslim 导出权重） |
 | entry_points 插件 | vllm-ascend 的 pyproject entry points + 扩展包加载 | 昇腾专属算子与 hook 以插件形态隔离集成（阶梯 3） |
 | torch_npu 融合算子替换 | `repos/targets/vllm-ascend/`（ops/ 目录：FIA / MLA absorb / MoE GMM / RoPE / KV write） | 识别并替换 torch_npu 融合算子（诊断 SOP 瓶颈 1 的「融合度验证」落点） |

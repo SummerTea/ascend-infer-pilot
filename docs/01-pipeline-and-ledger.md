@@ -39,7 +39,7 @@ flowchart LR
 
 | 维度 | 必须冻结的内容 | 昇腾侧要点 |
 | :--- | :--- | :--- |
-| **硬件上下文** | 芯片代际（910B3 / 950PR / 950DT）、当前精度理论峰值与可达上限、HBM 容量与带宽、卡间拓扑（RoCE / HCCS / PCIe）与跨 NUMA 位置 | 8×910B3 单机：HBM 64GB/卡；`npu-smi info` 确认 8 卡健康、`npu-smi topo` 确认 HCCS 拓扑 |
+| **硬件上下文** | 芯片代际（910B3 / 950PR / 950DT）、当前精度理论峰值与可达上限、HBM 容量与带宽、卡间拓扑（RoCE / HCCS / PCIe）与跨 NUMA 位置 | 8×910B3 单机：HBM 64GB/卡；`npu-smi info` 确认 8 卡健康、`npu-smi info -t topo` 确认 HCCS 拓扑 |
 | **模型结构特征向量** | 注意力族（MHA/GQA/MLA/线性稀疏）、核心几何（H、n_h、n_kv、d）、前馈形态（Dense / MoE：E、K、共享专家、门控）、数值格式（BF16 / FP8 / HiF8 / MXFP4 / MXFP8，Scale 粒度）、外部结构（Engram、MTP） | 950 新增 **HiF8 / MXFP4 / MXFP8** 原生数据类型；910B3 仅有 INT8/FP16/BF16 与低比特量化路径（msmodelslim / ATB 量化解码） |
 | **负载分布** | 序列长度 P50/P95/P99（S_in / S_out）、并发与到流模式（Batch=1 / 32 / 128、均匀 vs 突发）、前缀重合率 | 前缀命中率高 → 在 J4 前置选项里优先考虑前缀亲和路由 / KV 分层（Mooncake / LMCache 昇腾适配层） |
 | **SLO 与目标指标** | TTFT 上限（ms）、TPOT 上限（ms/token）、SLO 达标下 Goodput（RPS 或 tok/s）、探索态 vs 验收态目标 | 门禁以 `P_eff` / `BW_eff` 为分母；验收目标来自 J2 下界而不是拍脑袋 |
