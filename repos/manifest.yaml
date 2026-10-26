@@ -1,0 +1,52 @@
+# 昇腾大模型推理优化工程 - 源码仓库清单
+# 说明：targets = 待优化的目标工程（可改并导出 patch）；refs = 只读参考底座（严禁修改）
+targets:
+  vllm-ascend:
+    url: https://github.com/vllm-project/vllm-ascend.git
+    branch: main
+    role: "vLLM 昇腾官方硬件插件宿主（阶梯 1~5 主力优化对象）"
+  vllm:
+    url: https://github.com/vllm-project/vllm.git
+    branch: main
+    role: "vLLM 上游核心引擎（与 vllm-ascend 配合联调调度与接口）"
+  MindIE-LLM:
+    url: https://gitcode.com/Ascend/MindIE-LLM.git
+    branch: master
+    role: "昇腾原生大模型推理引擎（ATB/ACLNN 算子与建模优化）"
+  MindIE-Motor:
+    url: https://github.com/Ascend/MindIE-Motor.git
+    branch: master
+    role: "昇腾 PD 分离与集群服务化编排引擎"
+  xllm:
+    url: https://github.com/xLLM-AI/xllm.git
+    branch: main
+    role: "OpenAtom 昇腾高性能推理引擎（含 TileLang-Ascend 深度集成）"
+  sglang:
+    url: https://github.com/sgl-project/sglang.git
+    branch: main
+    role: "SGLang 推理引擎（含 NPU / Ascend 后端适配层）"
+  tilelang-ascend:
+    url: https://github.com/tile-ai/tilelang-ascend.git
+    branch: ascendc_pto
+    role: "TileLang 昇腾算子与编译器 Pass 开发仓（阶梯 4/5）"
+refs:
+  cann-recipes-infer:
+    url: https://gitcode.com/cann/cann-recipes-infer.git
+    branch: master
+    role: "CANN 官方大模型推理优化典型样例库（只读参考）"
+  msmodelslim:
+    url: https://gitcode.com/Ascend/msmodelslim.git
+    branch: master
+    role: "昇腾官方量化与模型压缩工具链源码（只读参考）"
+  catlass:
+    url: https://gitcode.com/cann/catlass.git
+    branch: master
+    role: "昇腾 Cube/Vector 高性能矩阵乘模板库（只读参考）"
+  pto-kernels:
+    url: https://github.com/huawei-csl/pto-kernels.git
+    branch: main
+    role: "华为 CSL A2A3(910B) / A5(950) 双代算子参考实现（只读参考）"
+  Mooncake:
+    url: https://github.com/kvcache-ai/Mooncake.git
+    branch: main
+    role: "KVCache 跨机传输与 PD 解耦参考底座（只读参考）"

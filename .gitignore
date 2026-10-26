@@ -1,0 +1,27 @@
+# === 外部源码目录：子目录各自独立 .git，不跟踪其内部代码（仅保留 .gitkeep）===
+/repos/targets/*
+!/repos/targets/.gitkeep
+/repos/refs/*
+!/repos/refs/.gitkeep
+
+# === 远端同步的第三方技能目录（仅保留 README 说明）===
+/.agents/skills/external/*
+!/.agents/skills/external/README.md
+
+# === 技能同步缓存 ===
+/.cache/
+
+# === 临时 profiling / 中间产物 ===
+/msprof_out/
+*.prof
+*.profiling
+profiling_data/
+*.tmp
+
+# === 通用 ===
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.codegraph/
+*.log
