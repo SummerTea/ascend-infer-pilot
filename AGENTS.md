@@ -17,15 +17,15 @@
 **Step 0 起手**：
 
 1. **定 `scenario-id`**：命名式 `<卡数>x<硬件>-<模型>-<主攻>`，例 `2x910B-dsv41-flash-rocm-net`（与 `cases/<entry-id>.md` 的"来源场景"字段同名引用）。
-2. **备料**：`bash scripts/sync_ascend_skills.sh --category all`（第三方技能）+ `bash scripts/manage_repos.sh clone --targets --scenario <scenario-id>`（目标源码进 `workspace/<scenario-id>/source/`；参考底座 `clone --refs` 进 `repos/refs/`）。
+2. **备料**：`bash scripts/sync_ascend_skills.sh --category all`（第三方技能）+ `bash scripts/manage_repos.sh clone --targets --scenario <scenario-id>`（目标源码进 `workspace/<scenario-id>/source/`；参考底座 `bash scripts/manage_repos.sh clone --refs` 进 `repos/refs/`）。
 3. **建台账并从 `00-scope` 起**：`workspace/<scenario-id>/ledger/` 按 §1.5 顺序推进；机器档案（§9）在 `01-probe.md` 补齐。
 
-首次接手先读 [README.md](README.md) 的快速启动与任务类型速查；本文件的 J1→J6 是**强制**阶段链。
+首次接手先读 [README.md](README.md) 的快速启动与**任务类型速查**（据任务选定入口阶段）；本文件给出完整阶段链 J1→J6，**各阶段的出口条件不可跳**——入口可依任务速查选，出口条件一律从严。
 
 | 阶段 | 目标 | 产出物 | 交付落点 | 判据 / 锚点 |
 | :--- | :--- | :--- | :--- | :--- |
 | J1 目标定义 | 冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/<scenario-id>/ledger/00-scope.md`（条目 md 仅在过验收态门禁后沉淀，见 §6.5） | 四维度齐全且无争议 ｜ [01 §2](docs/01-pipeline-and-ledger.md) |
-| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/<scenario-id>/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前；golden（独立黄金参考）落 `03-freeze-and-gate.md` | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/<scenario-id>/source/<engine>/`（只读阅读）；gap 清单落 `workspace/<scenario-id>/ledger/00-scope.md` | gap 逐项落到五阶梯一级 ｜ [01 §3](docs/01-pipeline-and-ledger.md) |
+| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/<scenario-id>/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前；golden（独立黄金参考）落 `03-freeze-and-gate.md` | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/<scenario-id>/source/<engine>/`（只读阅读）；gap 清单落 `workspace/<scenario-id>/ledger/00-scope.md` | gap 逐项落到五阶梯某一级 ｜ [01 §3](docs/01-pipeline-and-ledger.md) |
 | J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/<scenario-id>/ledger/02-baseline-ledger.md` | 结果可复算、口径唯一 ｜ [01 §4](docs/01-pipeline-and-ledger.md) |
 | J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/<scenario-id>/ledger/iterations/` | 总耗时可映射明确归因 ｜ [02 §1](docs/02-ascend-diagnosis-sop.md) |
 | J4 干预决策 | 五阶梯按 ROI 排序，**动手前声明源码落点** | 决策记录 + 落点声明 | `workspace/<scenario-id>/optimized/` 或 `workspace/<scenario-id>/source/<engine>/` | 收益/成本可量化、可回退 ｜ [01 §5](docs/01-pipeline-and-ledger.md) |
