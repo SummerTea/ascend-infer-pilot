@@ -1,6 +1,6 @@
 # 03 · 昇腾硬件代际物理规格与引擎扩展挂载点
 
-> **定位**：910B/910C vs 950PR/950DT 代际物理规格、主机环境核对（本机事实见 `AGENTS.md.local`）、四大引擎的昇腾扩展挂载点索引、950 落地建议。
+> **定位**：910B/910C vs 950PR/950DT 代际物理规格、主机环境核对（本机事实见各场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的机器档案段）、四大引擎的昇腾扩展挂载点索引、950 落地建议。
 > **配套**：[流水线与物理账本](01-pipeline-and-ledger.md)（P_eff/BW_eff 校准）｜ [诊断 SOP](02-ascend-diagnosis-sop.md) ｜ [技能目录](04-skill-catalog-and-maintenance.md)
 > **硬件参数以昇腾技能选型指南 §2.2 与 §5 为准**；本文档为 L2 层知识底座，**使用前须核对 CANN / torch_npu / 引擎 commit**（扩展挂载点与支持矩阵随版本变动）。
 
@@ -33,12 +33,12 @@
 
 ---
 
-## 2. 主机环境核对（本机事实见 AGENTS.md.local）
+## 2. 主机环境核对（只留通用探针方法与坑；本机事实见场景台账 01-probe.md 机器档案段）
 
-**主机专属事实一律见 `AGENTS.md.local`（不入库）**：评测服务器 IP / SSH 端口与密钥 / 卡型 / HBM 容量 / CANN·驱动·工具版本 / 镜像名与源 / 磁盘布局与模型·数据集路径 / 配套版本组合。本文档只保留**通用探针方法与坑**。首次上机按序执行：
+**主机专属事实一律见各场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的「机器档案」段（不入库）**：评测服务器 IP / SSH 端口与密钥 / 卡型 / HBM 容量 / CANN·驱动·工具版本 / 镜像名与源 / 磁盘布局与模型·数据集路径 / 配套版本组合。本文档**只保留通用探针方法与坑，不落任何本机专属值**。首次上机按序执行：
 
 ```bash
-# 0) 登录评测机（SSH 端口、密钥与账号见 AGENTS.md.local）
+# 0) 登录评测机（SSH 端口、密钥与账号见场景台账 01-probe.md 的机器档案段）
 ssh -i <密钥> -o IdentitiesOnly=yes -p <端口> <用户>@<主机>
 
 # 1) 加载 CANN 工具链（msprof / atc / hccl_test 等不在默认 PATH，须先 source）
@@ -63,8 +63,8 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
 - `latest/version.cfg` **可能为空文件**——取 CANN 版本用 `cann/version.cfg` 或目录名（`cann-<version>`），勿靠 `latest/` 软链。
 - 工具（`msprof` / `msprof-analyze` / `atc` / `hccl_test` / `ascend-dmi`）**不在默认 PATH**，`command -v` 为空是正常的，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
-- 宿主通常**未安装 torch / torch_npu**，评测与采集一律进 Docker 容器；`docker ps -a` / `docker images` 核对容器与镜像（镜像名见 `AGENTS.md.local`）。
-- 磁盘布局与容量以 `df -h` 实测为准（模型/数据集路径见 `AGENTS.md.local`）。
+- 宿主通常**未安装 torch / torch_npu**，评测与采集一律进 Docker 容器；`docker ps -a` / `docker images` 核对容器与镜像（镜像名与源见场景台账 01-probe.md 的机器档案段）。
+- 磁盘布局与容量以 `df -h` 实测为准（模型/数据集路径见场景台账 01-probe.md 的机器档案段）。
 
 校准结果落 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<模型>@<硬件>` 分节；α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）。
 
@@ -143,7 +143,7 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
 ## CUDA→torch_npu 迁移与图模式修复
 
-对应昇腾接入的「J1 前置」：环境配套与迁移。**配套版本是本环节最高风险点**——CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK）严格对应，不可混装；换任一版本必须重跑校准与复测（本机实测配套版本见 `AGENTS.md.local`）。
+对应昇腾接入的「J1 前置」：环境配套与迁移。**配套版本是本环节最高风险点**——CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK）严格对应，不可混装；换任一版本必须重跑校准与复测（本机实测配套版本见场景台账 01-probe.md 的机器档案段）。
 
 ### 1. 迁移速查（机械替换 + 语义核对）
 
@@ -160,7 +160,7 @@ cudaStream/Event   → 昇腾 stream/事件语义（API 名须上机核实，勿
 
 ```
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-ls -l /usr/local/Ascend/cann                  # → cann-<version>（本机版本见 AGENTS.md.local）
+ls -l /usr/local/Ascend/cann                  # → cann-<version>（本机版本见场景台账 01-probe.md 的机器档案段）
 cat /usr/local/Ascend/driver/version.info     # Version=… / ascendhal_version=…
 python3 -c "import torch, torch_npu; print(torch.__version__, torch_npu.__version__)"   # 在容器内
 ```

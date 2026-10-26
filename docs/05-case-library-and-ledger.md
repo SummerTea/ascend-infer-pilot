@@ -139,17 +139,20 @@
 
 > **位置**：`workspace/<scenario-id>/ledger/`（不入库、**每场景一份**、自包含、场景间并发安全）；`workspace/_shared/` 跨场景共享。
 > **职责**：台账是**过程留痕**（决策依据与证据链），条目 md 是**沉淀结论**——两者互为引用，不重复。
+> **工作流顺序**：`00-scope → 01-probe → 02-baseline-ledger → 03-freeze-and-gate → 04-bootstrap → loop: iterations/it-NNN → summary.md`；**停止判据：达标即停 / 预算耗尽即停 / 物理不可达即停**；回边：J6 未达预期→回 J3；阶梯失败→回退上一阶梯；J2 物理不可达→回 J1 重谈 SLO（细则以本文件为唯一权威）。
 
 | 文件 | 职责 | 关键字段 |
 | :--- | :--- | :--- |
 | `00-scope.md` | ① J1 目标四输入 + J1.5 gap + 停止判据 | 硬件上下文 / 模型结构特征向量 / 负载分布 / SLO 与目标指标；gap 清单（组件、引擎现状、需改动、源码落点、对应阶梯）；停止判据（达标即停 / 预算耗尽即停 / 物理不可达即停） |
-| `01-probe.md` | ② 主机探测 + 模型源码探测 | **排除权重介质**（不下载 / 不搬运权重）；`npu-smi info` / 拓扑 / 工具版本；模型结构特征向量核对 |
+| `01-probe.md` | ② **机器档案**（登录方式 / 卡型与数量 / HBM / 驱动 / CANN / 工具与 PATH 前提 / 容器与镜像 / 磁盘 / 模型·数据集落点）+ **本场景前置齐备性检查**（依赖 / 工具 / 环境 / 模型介质 → 具备 / 缺失 / 待确认）+ **模型源码探测**（`config.json` / `*.py` / 并行与量化配置 / 算子清单 / commit；**排除权重介质**）+ 与上次探测的**差异**（换机 / 换版本留痕） | 机器档案字段：登录方式（SSH 密钥 / 端口 / 账号 / 主机名）/ 卡型与数量、HBM 容量每卡、卡间拓扑 / 驱动、CANN 版本（取法：`cann/version.cfg` 或目录名）/ 工具与 PATH 前提（`source set_env.sh` 后 msprof / atc / hccl_test 才可用；宿主无 torch / torch_npu → 评测与采集一律进容器）/ 容器与镜像（镜像名与源）/ 磁盘（容量 / 已用 / 大文件落点）/ 模型·数据集落点（路径）；齐备性：依赖 / 工具 / 环境 / 模型介质（具备 / 缺失 / 待确认）；源码探测：`config.json` / `*.py` / 并行与量化配置 / 算子清单 / commit（**排除权重介质**）；差异：换机 / 换版本留痕 |
 | `02-baseline-ledger.md` | ③ J2 双约束账本 | `P_eff` / `BW_eff` / `B*`；Decode·Prefill 时间下界；显存容量账本（权重 / KV / 系统余量）；`MFU_eff` / `BW_util` 实测口径 |
-| `03-freeze-and-gate.md` | ④ 环境冻结指纹 + 黄金参考 + 门禁口径 | CANN↔torch_npu↔PyTorch↔驱动版本快照 / 引擎 commit / 锁频；golden（transformers eager）；轨道 A（相应档位 L1/L2/L3）与轨道 B 的阈值与判据 |
+| `03-freeze-and-gate.md` | ④ **本次实验的冻结指纹**（实际运行所用 CANN↔torch_npu↔PyTorch↔驱动 / 引擎 commit / 锁频 / 权重 hash）+ 黄金参考 + 轨道 A/B 门禁口径阈值 | 每次实验核对并记录**实际**指纹，须与 `01-probe.md` 机器档案一致，不一致要记原因；golden（transformers eager）；轨道 A（相应档位 L1/L2/L3）与轨道 B 的阈值与判据 |
 | `04-bootstrap.md` | ⑤ 初始建议启动 | 首个假设与对应阶梯、预期收益、首轮实验命令 |
 | `iterations/it-NNN.md` | ⑥ 每轮迭代记录 | 字段顺序见下 |
 | `state.json` | ⑦ 轻量机器可读状态 | 字段清单见下 |
 | `summary.md` | ⑧ 收尾结论 | best 结果 / ROI 成本收益 / 反模式清单 / 有效·无效·失败方法 / 是否沉淀条目（entry-id） |
+
+> **分工原则**：`01-probe.md` 的机器档案 = **机器「有什么」**（相对稳定，换机 / 换版本才变）；`03-freeze-and-gate.md` = **本次实验「冻结在什么」**（每次实验核对并记录**实际**指纹，须与机器档案一致，不一致要记原因）。
 
 **`iterations/it-NNN.md` 字段顺序（逐轮，按序记录）**：
 

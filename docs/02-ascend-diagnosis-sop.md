@@ -254,7 +254,7 @@ msprof-analyze calibrate_npu_gpu --gpu-profile <nsys SQLite> --npu-profile <NPU 
 
 ## HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）
 
-对应 L4 互联层的执行细节。**先分清拓扑再谈通信排障**——单机卡间互联形态（HCCS / RoCE / PCIe）以 `npu-smi info -t topo` 实测为准（本机拓扑与 CPU 亲和事实见 `AGENTS.md.local`），避免把 HCCS 问题按 RoCE 排查；**跨机**才涉及 RoCE。通信基线须与**同拓扑**历史基线比（偏差 > 10% 先查硬件），不对公开数字比。`hccl_test` / `ascend-dmi` 不在默认 PATH，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
+对应 L4 互联层的执行细节。**先分清拓扑再谈通信排障**——单机卡间互联形态（HCCS / RoCE / PCIe）以 `npu-smi info -t topo` 实测为准（本机拓扑与 CPU 亲和事实见当前场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的机器档案段），避免把 HCCS 问题按 RoCE 排查；**跨机**才涉及 RoCE。通信基线须与**同拓扑**历史基线比（偏差 > 10% 先查硬件），不对公开数字比。`hccl_test` / `ascend-dmi` 不在默认 PATH，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
 
 ### 1. 拓扑判读（先分清 HCCS / RoCE）
 

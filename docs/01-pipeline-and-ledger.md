@@ -2,7 +2,7 @@
 
 > **定位**：J1→J6 决策流水线全景、J2 双约束物理账本（核心公式）、J4 干预五阶梯 ROI 树。
 > **配套**：[门禁规则](../gates/README.md) ｜ [任务书模板](../templates/task-spec-template.md) ｜ [诊断 SOP](02-ascend-diagnosis-sop.md) ｜ [硬件与引擎](03-ascend-hardware-and-engines.md) ｜ [技能目录](04-skill-catalog-and-maintenance.md) ｜ [案例库与台账规范](05-case-library-and-ledger.md)
-> **适用硬件**：昇腾 **910B3（A2/A3）** 与 **950PR/950DT（A5/arch35）**；评测机主机事实（登录方式 / 卡型 / HBM / 工具版本）见 `AGENTS.md.local`（不入库）。
+> **适用硬件**：昇腾 **910B3（A2/A3）** 与 **950PR/950DT（A5/arch35）**；评测机主机事实（登录方式 / 卡型 / HBM / 工具版本）记录在各场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的机器档案段（不入库）。
 
 ---
 
@@ -33,13 +33,27 @@ flowchart LR
 
 > **纪律**：J1.5 的接入冒烟 / 黄金参考在 J2 **之后**、J3 **之前**执行——J2 仅需 config 与硬件规格即可纸面核算；若 J2 已证明目标物理不可达，应在投入任何接入成本之前先回 J1 重谈 SLO。
 
+### 1.3 J1→J6 ↔ 台账文件对应
+
+每个阶段写哪个台账文件（细则以 [docs/05 §3](05-case-library-and-ledger.md) 为唯一权威）：
+
+| 阶段 | 写哪个台账文件 |
+| :--- | :--- |
+| **J1 目标定义** | `workspace/<scenario-id>/ledger/00-scope.md`（目标四输入） |
+| **J1.5 引擎能力盘点** | `workspace/<scenario-id>/ledger/00-scope.md` 的 **gap 段** |
+| **J2 物理上限核算** | `workspace/<scenario-id>/ledger/02-baseline-ledger.md` |
+| **J3 基线归因** | `workspace/<scenario-id>/ledger/iterations/it-NNN.md`（前置：`01-probe.md` 的机器档案与齐备性检查） |
+| **J4 干预决策** | 产出落 `workspace/<scenario-id>/optimized/` 或 `source/` |
+| **J5 任务书交付** | 任务书（[模板](../templates/task-spec-template.md)）+ 产出在 `workspace/<scenario-id>/optimized/` |
+| **J6 双轨门禁** | `03-freeze-and-gate.md` + `summary.md` + 沉淀条目 `cases/<entry-id>.md` |
+
 ---
 
 ## 2. J1 上下文冻结（四维度）
 
 | 维度 | 必须冻结的内容 | 昇腾侧要点 |
 | :--- | :--- | :--- |
-| **硬件上下文** | 芯片代际（910B3 / 950PR / 950DT）、当前精度理论峰值与可达上限、HBM 容量与带宽、卡间拓扑（RoCE / HCCS / PCIe）与跨 NUMA 位置 | 单机 8 卡：`npu-smi info` 确认 8 卡健康、`npu-smi info -t topo` 确认卡间拓扑（HCCS / RoCE / PCIe）（本机 HBM 容量/带宽与工具版本见 `AGENTS.md.local`） |
+| **硬件上下文** | 芯片代际（910B3 / 950PR / 950DT）、当前精度理论峰值与可达上限、HBM 容量与带宽、卡间拓扑（RoCE / HCCS / PCIe）与跨 NUMA 位置 | 单机 8 卡：`npu-smi info` 确认 8 卡健康、`npu-smi info -t topo` 确认卡间拓扑（HCCS / RoCE / PCIe）（本机 HBM 容量/带宽与工具版本见场景台账 01-probe.md 的机器档案段） |
 | **模型结构特征向量** | 注意力族（MHA/GQA/MLA/线性稀疏）、核心几何（H、n_h、n_kv、d）、前馈形态（Dense / MoE：E、K、共享专家、门控）、数值格式（BF16 / FP8 / HiF8 / MXFP4 / MXFP8，Scale 粒度）、外部结构（Engram、MTP） | 950 新增 **HiF8 / MXFP4 / MXFP8** 原生数据类型；910B3 仅有 INT8/FP16/BF16 与低比特量化路径（msmodelslim / ATB 量化解码） |
 | **负载分布** | 序列长度 P50/P95/P99（S_in / S_out）、并发与到流模式（Batch=1 / 32 / 128、均匀 vs 突发）、前缀重合率 | 前缀命中率高 → 在 J4 前置选项里优先考虑前缀亲和路由 / KV 分层（Mooncake / LMCache 昇腾适配层） |
 | **SLO 与目标指标** | TTFT 上限（ms）、TPOT 上限（ms/token）、SLO 达标下 Goodput（RPS 或 tok/s）、探索态 vs 验收态目标 | 门禁以 `P_eff` / `BW_eff` 为分母；验收目标来自 J2 下界而不是拍脑袋 |
@@ -234,7 +248,7 @@ flowchart TD
 
 ## 阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）
 
-针对 J4 阶梯 4「专用 Kernel 移植与开发」的算子实现、审查与交付。动手前必读 [AGENTS.md](../AGENTS.md) §5 五不准红线与 [任务书模板](../templates/task-spec-template.md)（两阶段交付、方案评审先行）。参考实现一律读 `repos/refs/<repo>/`（只读），交付落 `workspace/<scenario-id>/optimized/kernels/`；**环境与配套版本事实见 `AGENTS.md.local`**（本机 CANN / torch_npu / 驱动版本）。
+针对 J4 阶梯 4「专用 Kernel 移植与开发」的算子实现、审查与交付。动手前必读 [AGENTS.md](../AGENTS.md) §5 五不准红线与 [任务书模板](../templates/task-spec-template.md)（两阶段交付、方案评审先行）。参考实现一律读 `repos/refs/<repo>/`（只读），交付落 `workspace/<scenario-id>/optimized/kernels/`；**环境与配套版本事实见场景台账 01-probe.md 的机器档案段**（本机 CANN / torch_npu / 驱动版本）。
 
 ### 1. 读参考实现（J4 前先读再算）
 
@@ -306,7 +320,7 @@ mssanitizer --check=memcheck,racecheck,initcheck,synccheck --output=/tmp/san <�
 
 ## J6 实操：量化与门禁（msmodelslim + L1/L2/L3 + 探索态/验收态）
 
-J6 双轨门禁的昇腾落地：轨道 A 正确性（L1/L2/L3 三级）+ 轨道 B 性能（探索态/验收态）。**门禁脚本/阈值/基线由架构师持有并对 Agent 只读**（[门禁规则](../gates/README.md)）；Agent 只交实现与自测，不得改门禁。量化/性能结论**硬绑定环境**——换 CANN / torch_npu / 芯片（910B3 vs 950）必须重跑校准与复测（本机配套版本见 `AGENTS.md.local`）。
+J6 双轨门禁的昇腾落地：轨道 A 正确性（L1/L2/L3 三级）+ 轨道 B 性能（探索态/验收态）。**门禁脚本/阈值/基线由架构师持有并对 Agent 只读**（[门禁规则](../gates/README.md)）；Agent 只交实现与自测，不得改门禁。量化/性能结论**硬绑定环境**——换 CANN / torch_npu / 芯片（910B3 vs 950）必须重跑校准与复测（本机配套版本见场景台账 01-probe.md 的机器档案段）。
 
 ### 1. msmodelslim 量化流程
 

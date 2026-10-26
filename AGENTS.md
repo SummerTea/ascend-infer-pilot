@@ -1,4 +1,4 @@
-# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 7）
+# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 8）
 
 ## 0. 定位与入口导航
 
@@ -26,6 +26,30 @@
 回边：J6 未达预期 → 回 J3 重新归因；J4 阶梯失败 → 回退上一阶梯；J2 证明物理不可达 → 回 J1 重谈 SLO。
 
 干预五阶梯（J4 按 ROI 排序，失败回退上一阶梯）：`阶梯 1 配置与编排调优` / `阶梯 2 已有成熟后端切换` / `阶梯 3 Out-of-tree 插件扩展` / `阶梯 4 专用 Kernel 移植与开发` / `阶梯 5 底层引擎内核重写与 Fork`。
+
+## 1.5 场景台账工作流
+
+每场景一份台账，落 `workspace/<scenario-id>/ledger/`（**不入库**），是**过程留痕**（决策依据与证据链）；沉淀结论走条目 md（`cases/`）。
+
+**顺序（每场景按序执行，可复制）**：
+
+```
+00-scope → 01-probe → 02-baseline-ledger → 03-freeze-and-gate → 04-bootstrap → loop: iterations/it-NNN → summary.md
+```
+
+**与 §1 阶段对应**：J1→`00-scope`（四输入）；J1.5→`00-scope` 的 gap 段；J2→`02-baseline-ledger`；J3→`iterations/`；J4→`optimized/` 或 `source/`；J5→任务书 + `optimized/`；J6→`03-freeze-and-gate` + `summary.md` + 条目。
+
+**loop 每轮（`iterations/it-NNN.md`）按序记录**：
+
+1. 假设 → 对应阶梯/方法 → 改动（文件 + 关键 diff）
+2. **环境指纹**（本轮实际版本 / 锁频 / commit）
+3. `msprof` / `msprof op` 命令 + 产物路径 + 五表摘录
+4. 门禁 A/B 结果 → **结论方向（正向 / 反向 / 无变化）** → 决策（保留 / 回退 / 继续）
+5. 成本估计 → 下轮建议
+
+**停止判据**：达标即停 / 预算耗尽即停 / 物理不可达即停。**回边**：J6 未达预期 → 回 J3；阶梯失败 → 回退上一阶梯；J2 物理不可达 → 回 J1 重谈 SLO。
+
+字段清单与 `state.json` schema 见 [docs/05 §3](docs/05-case-library-and-ledger.md)。
 
 ## 2. 源码目录边界军规
 
@@ -89,7 +113,7 @@
 | HCCL 与通信排障 | [docs/02](docs/02-ascend-diagnosis-sop.md) §`HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）` |
 | 迁移与图模式 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`CUDA→torch_npu 迁移与图模式修复` |
 | vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
-| 主机环境（本机事实） | [AGENTS.md.local](AGENTS.md.local)（**不入版本控制**，缺失时按 §9 探针命令生成或更新） |
+| 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
 
 **第三方技能 → `.agents/skills/`**：`vendored/`（7，随仓库跟踪）+ `external/`（21，按域同步、内容被 gitignore，见 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh)）。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §第三方技能昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
@@ -102,9 +126,9 @@
 
 ## 9. 主机环境取证
 
-本机实测值（服务器地址与端口 / CANN 与驱动版本 / 容器与镜像 / 磁盘与模型落点）见 **`AGENTS.md.local`**（**不入版本控制**，缺失时按下列命令生成或更新）。
+本机事实（登录方式 / 卡型 / HBM / 驱动、CANN 与工具版本 / 容器与镜像 / 磁盘与模型·数据集落点）记录在该场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的「机器档案」段（**不入库**；字段规范见 [docs/05 §3](docs/05-case-library-and-ledger.md)）。机器专属值不得写入本文件。
 
-通用探针命令（换机 / 换版本后重跑，把结果更新进 `AGENTS.md.local`）：
+通用探针命令（换机 / 换版本后重跑，把结果写入当前场景台账 `01-probe.md` 的机器档案段）：
 
 ```
 ssh -i ~/.ssh/<密钥> -o IdentitiesOnly=yes -p <端口> root@<服务器IP>

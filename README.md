@@ -22,10 +22,10 @@
 
 ## 快速启动工作流（6 步）
 
-> 前置：核对 [AGENTS.md.local](AGENTS.md.local)（主机环境说明，**不入库**）；缺失或换机/换版本时按 [AGENTS.md §9](AGENTS.md) 探针命令重跑并更新。
+> 前置：核对**当前场景台账** `workspace/<scenario-id>/ledger/01-probe.md` 的机器档案段（不入库）；缺失或换机/换版本时按 [AGENTS.md §9](AGENTS.md) 探针命令重跑并写入台账。
 
 1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（拉取 21 个外部源仓的 SKILL.md 到 `.agents/skills/external/`）。
-2. **克隆目标源码**：`scripts/manage_repos.sh clone --targets --scenario <id> && scripts/manage_repos.sh clone --refs`（按 [repos/manifest.yaml](repos/manifest.yaml) 浅克隆：targets 落到 `workspace/<scenario-id>/source/`，refs 落到 `repos/refs/`）。
+2. **克隆目标源码 + 建台账**：`scripts/manage_repos.sh clone --targets --scenario <id> && scripts/manage_repos.sh clone --refs`（按 [repos/manifest.yaml](repos/manifest.yaml) 浅克隆：targets 落到 `workspace/<scenario-id>/source/`，refs 落到 `repos/refs/`）；随后按 [docs/05 §3](docs/05-case-library-and-ledger.md) 建场景台账 8 项（`workspace/<scenario-id>/ledger/`，起点 `00-scope.md`）。
 3. **读方法论**：先读 [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md)（J1→J6 主线），诊断类任务加读 [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md)。
 4. **用模板派发**：用 [任务书模板](templates/task-spec-template.md) 写任务书（必填源码落点与参考路径）；实验记录与校准台账用 [PMR](templates/pmr-log-template.md)、[校准台账](templates/calibration-template.md) 两个模板。
 5. **归档补丁**：改 `workspace/<scenario-id>/source/` 后 `scripts/manage_repos.sh export-patch <repo> --scenario <id>` 导出 patch 到 `workspace/<scenario-id>/ledger/patches/`。
@@ -48,7 +48,6 @@
 | [docs/](docs/) | 方法论 01~05 + 自研知识实操章节 | **自研 / 个性化知识一律在 `docs/`**（01 流水线与账本 / 02 诊断 SOP / 03 硬件与引擎 / 04 技能目录 / 05 案例库与台账；实操章节路由见 [AGENTS.md §7](AGENTS.md)） |
 | [gates/](gates/README.md) | 双轨门禁规则与所有权 | 门禁由架构师持有，Agent 只读 |
 | [templates/](templates/) | 任务书 / PMR / 校准台账 | 派发与记录模板 |
-| [AGENTS.md.local](AGENTS.md.local) | 主机环境说明（**不入库** / 本机事实） | 服务器地址与端口、CANN/驱动版本、容器与镜像、磁盘与模型落点；缺失时按 [AGENTS.md §9](AGENTS.md) 探针命令生成 |
 | [repos/](repos/README.md) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | refs 严禁修改；待优化工程源码在 `workspace/<scenario-id>/source/`（每场景一份） |
 | `workspace/` | **工作区（不入库）**：`<scenario-id>/`（一个优化场景一份：`source/` / `optimized/` / `ledger/`）+ `_shared/calibration.md` | 每场景一份、自包含、并发安全 |
 | [scripts/](scripts/) | `manage_repos.sh` / `sync_ascend_skills.sh` | 源码与技能管理 |
