@@ -15,8 +15,8 @@
 
 | 阶段 | 目标 | 产出物 | 交付落点 | 参考文档锚点 |
 | :--- | :--- | :--- | :--- | :--- |
-| J1 目标定义 | 冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `cases/<case-id>.md`（案例）+ `workspace/ledger/<case-id>/00-scope.md` | [01](docs/01-pipeline-and-ledger.md) |
-| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前 | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/source/<engine>/`（盘点现有能力，只读阅读） | [01](docs/01-pipeline-and-ledger.md) |
+| J1 目标定义 | 冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/ledger/<case-id>/00-scope.md`（案例 md 仅在过验收态门禁后由 Agent 沉淀，见 §6.5） | [01](docs/01-pipeline-and-ledger.md) |
+| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前 | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/source/<engine>/`（盘点现有能力，只读阅读）；gap 清单落 `workspace/ledger/<case-id>/00-scope.md` | [01](docs/01-pipeline-and-ledger.md) |
 | J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/ledger/<case-id>/02-baseline-ledger.md` | [01](docs/01-pipeline-and-ledger.md) |
 | J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/ledger/<case-id>/iterations/` | [02](docs/02-ascend-diagnosis-sop.md) |
 | J4 干预决策 | 五阶梯按 ROI 排序，**动手前声明源码落点** | 决策记录 + 落点声明 | `workspace/optimized/` 或 `workspace/source/<engine>/` | [01](docs/01-pipeline-and-ledger.md) |

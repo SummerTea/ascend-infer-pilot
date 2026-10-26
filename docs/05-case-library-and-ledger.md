@@ -12,7 +12,7 @@
 
 **入库纪律（Agent 自主沉淀）**：
 
-1. **仅「优化有效果且过验收态门禁」的案例入库**：入库门槛 = 轨道 A（L1/L2/L3）与轨道 B（收益 / Goodput / 长稳）双轨通过，且环境冻结可复现（见 [门禁规则](../gates/README.md)）。
+1. **仅「优化有效果且过验收态门禁」的案例入库**：入库门槛 = 轨道 A（相应档位 L1/L2/L3）与轨道 B（收益 / Goodput / 长稳）双轨通过，且环境冻结可复现（见 [门禁规则](../gates/README.md)）。
 2. **由 Agent 自主沉淀**：不做脚手架、不做模板文件；案例验收通过后由 Agent 按 §2 规范直接写 `cases/<case-id>.md`，并同步更新 `cases/index.md`。
 3. **失败 / 反向结果不入库**：以「反模式」写进案例 md 第 6 节（供他人规避），或就地记入 `workspace/ledger/<case-id>/summary.md` 的反模式清单；不占 `cases/index.md` 行位。
 4. **交付物不入库**：patch、profiling、门禁产物一律留 `workspace/ledger/<case-id>/`（不入库）；案例 md 只写「关键 diff 摘录」与「证据路径引用」。
@@ -39,7 +39,7 @@
 | :--- | :--- |
 | case-id | `<唯一标识，如 910b3-<模型>-<瓶颈>-<方法>>` |
 | 模型@硬件 | `<模型名>@<910B3 / 950PR / 950DT>` |
-| 状态 | `<成功 / 部分 / 失败-已回退>` |
+| 状态 | `<成功 / 部分>`（未达标 / 已回退案例不入库） |
 | 日期 | `<YYYY-MM-DD>` |
 | 引擎 + commit | `<引擎名 @ commit>`（改造前基线 commit 与改造后 commit 都要） |
 | 配套版本 | `<CANN ↔ torch_npu ↔ PyTorch ↔ 驱动>`（与台账冻结指纹一致） |
@@ -64,7 +64,7 @@
   落点文件与接口（workspace/optimized/ 或 workspace/source/<engine>/）。>
 
 ## 5. 验证方案与结果（★必填）
-<轨道 A：L1/L2/L3 + 阈值 + 实测；轨道 B：相对基线收益 / 开环 Goodput / 边界 /
+<轨道 A：相应档位 L1/L2/L3 + 阈值 + 实测；轨道 B：相对基线收益 / 开环 Goodput / 边界 /
   长稳 / 回归抽检；前后对照表；可复现命令。>
 
 ## 6. 复盘与可复用经验
@@ -124,7 +124,7 @@
 | `00-scope.md` | ① J1 目标四输入 + J1.5 gap + 停止判据 | 硬件上下文 / 模型结构特征向量 / 负载分布 / SLO 与目标指标；gap 清单（组件、引擎现状、需改动、源码落点、对应阶梯）；停止判据（达标即停 / 预算耗尽即停 / 物理不可达即停） |
 | `01-probe.md` | ② 主机探测 + 模型源码探测 | **排除权重介质**（不下载 / 不搬运权重）；`npu-smi info` / 拓扑 / 工具版本；模型结构特征向量核对 |
 | `02-baseline-ledger.md` | ③ J2 双约束账本 | `P_eff` / `BW_eff` / `B*`；Decode·Prefill 时间下界；显存容量账本（权重 / KV / 系统余量）；`MFU_eff` / `BW_util` 实测口径 |
-| `03-freeze-and-gate.md` | ④ 环境冻结指纹 + 黄金参考 + 门禁口径 | CANN↔torch_npu↔PyTorch↔驱动版本快照 / 引擎 commit / 锁频；golden（transformers eager）；轨道 A（L1/L2/L3）与轨道 B 的阈值与判据 |
+| `03-freeze-and-gate.md` | ④ 环境冻结指纹 + 黄金参考 + 门禁口径 | CANN↔torch_npu↔PyTorch↔驱动版本快照 / 引擎 commit / 锁频；golden（transformers eager）；轨道 A（相应档位 L1/L2/L3）与轨道 B 的阈值与判据 |
 | `04-bootstrap.md` | ⑤ 初始建议启动 | 首个假设与对应阶梯、预期收益、首轮实验命令 |
 | `iterations/it-NNN.md` | ⑥ 每轮迭代记录 | 字段顺序见下 |
 | `state.json` | ⑦ 轻量机器可读状态 | 字段清单见下 |
@@ -137,7 +137,7 @@
 3. 改动（文件 + 关键 diff）
 4. **环境指纹**（本轮实际运行的配套版本 / 锁频 / commit）
 5. `msprof` 命令 + 产物路径 + 五表摘录（Kernel / 通信重叠 / 融合模式 / 下发效率 / 内存效率）
-6. 门禁 A/B 结果（轨道 A：L1/L2/L3 实测；轨道 B：相对基线收益 / Goodput）
+6. 门禁 A/B 结果（轨道 A：相应档位 L1/L2/L3 实测；轨道 B：相对基线收益 / Goodput）
 7. 结论方向：**正向 / 反向 / 无变化**
 8. 决策：保留 / 回退 / 继续
 9. 成本估计（人时 / 机时）
