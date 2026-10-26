@@ -139,7 +139,7 @@
 
 > **位置**：`workspace/<scenario-id>/ledger/`（不入库、**每场景一份**、自包含、场景间并发安全）；`workspace/_shared/` 跨场景共享。
 > **职责**：台账是**过程留痕**（决策依据与证据链），条目 md 是**沉淀结论**——两者互为引用，不重复。
-> **工作流顺序**：`00-scope → 01-probe → 02-baseline-ledger → 03-freeze-and-gate → 04-bootstrap → loop: iterations/it-NNN → summary.md`；**停止判据：达标即停 / 预算耗尽即停 / 物理不可达即停**；回边：J6 未达预期→回 J3；阶梯失败→回退上一阶梯；J2 物理不可达→回 J1 重谈 SLO（细则以本文件为唯一权威）。
+> **工作流顺序**：`00-scope → 01-probe → 02-baseline-ledger → 03-freeze-and-gate → 04-bootstrap → loop: iterations/it-NNN → summary.md`（**7 个顺序步**；第 8 项 `state.json` 随 loop 逐轮同步维护，不入顺序链）；**停止判据：达标即停 / 预算耗尽即停 / 物理不可达即停**；回边：J6 未达预期→回 J3；阶梯失败→回退上一阶梯；J2 物理不可达→回 J1 重谈 SLO（细则以本文件为唯一权威）。
 
 | 文件 | 职责 | 关键字段 |
 | :--- | :--- | :--- |

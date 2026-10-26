@@ -13,7 +13,7 @@
 | PyTorch 版本 | `<pip show torch>` |
 | 驱动 HDK 版本 | `<npu-smi / dmesg 核对>` |
 | npu-smi 版本 | `<npu-smi 版本>`（见当前场景台账 01-probe.md 的机器档案段） |
-| 服务器 / 拓扑 | `<服务器 IP>`（SSH 端口 `<端口>`），`<卡型 × 数>`、HBM `<容量>`/卡；卡间拓扑 `<HCCL 或 RoCE>` |
+| 服务器 / 拓扑 | 卡间拓扑 `<HCCL 或 RoCE>`；服务器 IP / SSH 端口 / 卡型与数量 / HBM 以当前场景台账 `01-probe.md` 的**机器档案段为权威**，本表不重复落笔 |
 
 ## 二、P_eff 标定（理想大 GEMM 微基准）
 

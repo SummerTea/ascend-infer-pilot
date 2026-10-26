@@ -37,9 +37,11 @@
 00-scope → 01-probe → 02-baseline-ledger → 03-freeze-and-gate → 04-bootstrap → loop: iterations/it-NNN → summary.md
 ```
 
+> 上述为 **7 个顺序步**；台账第 8 项 `state.json` 随 loop **逐轮同步维护**，故不入顺序链。
+
 **与 §1 阶段对应**：J1→`00-scope`（四输入）；J1.5→`00-scope` 的 gap 段；J2→`02-baseline-ledger`；J3→`iterations/`；J4→`optimized/` 或 `source/`；J5→任务书 + `optimized/`；J6→`03-freeze-and-gate` + `summary.md` + 条目。
 
-**loop 每轮（`iterations/it-NNN.md`）按序记录**：
+**loop 每轮（`iterations/it-NNN.md`）按序记录**（下列 5 条是 [docs/05 §3](docs/05-case-library-and-ledger.md) **10 个字段的无损归并**，逐项以该处为准）：
 
 1. 假设 → 对应阶梯/方法 → 改动（文件 + 关键 diff）
 2. **环境指纹**（本轮实际版本 / 锁频 / commit）
@@ -142,3 +144,4 @@ df -h /data /
 nproc
 free -g
 ```
+> 完整探针（含 `msprof` / `hccl_test` / 校准前置）见 [docs/03 §2 主机环境核对](docs/03-ascend-hardware-and-engines.md)。
