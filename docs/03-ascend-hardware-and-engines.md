@@ -37,24 +37,31 @@
 
 | 项 | 值 |
 | :--- | :--- |
-| 评测服务器 | `10.19.93.115`（SSH 端口 **22022**，密钥 `~/.ssh/910b_ed25519`，`-o IdentitiesOnly=yes`） |
+| 评测服务器 | `10.19.93.115`（SSH 端口 **22022**，密钥 `~/.ssh/910b_ed25519`，`-o IdentitiesOnly=yes`，免密；另有 `puaiuc` 账号）；主机名 `phy-10-19-93-115`，Ubuntu 24.04 LTS，**192 核**，内存约 **1TB（1005 GB）** |
 | 卡型 | **8× 910B3**（A2/A3 代际） |
-| HBM | **64GB/卡** |
-| 工具版本 | `npu-smi 25.5.1` |
-| 拓扑 | 单机 8 卡（`npu-smi topo` 确认 HCCS 互联形态；跨机 RoCE 需 `ethtool` / HCCL 诊断） |
+| HBM | **64GB/卡**（`npu-smi` 报 65536MB） |
+| 工具版本 | `npu-smi 25.5.1`；驱动 `Version=25.5.1`、`ascendhal_version=7.35.23`（`/usr/local/Ascend/driver/version.info`） |
+| CANN | **CANN 9.0.0-beta.1**（`/usr/local/Ascend/cann` → `cann-9.0.0-beta.1`；`latest/version.cfg` 为空文件，用 `cann/version.cfg` 或目录名取版本；`/usr/local/Ascend/cann-9.0.0` 是 0 字节占位文件，勿当目录） |
+| 拓扑 | 单机 8 卡**全互联 = HCCS**（`npu-smi info -t topo` 实测，非 RoCE）；CPU 亲和分别绑 0-23/48-71/96-119/144-167；跨机 RoCE 需 `ethtool` / HCCL 诊断 |
+| 工具 PATH | `msprof` / `msprof-analyze` / `ascend-dmi` / `atc` / `hccl_test` **不在默认 PATH**（`command -v` 为空），必须先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh` |
+| 宿主与容器 | 宿主 Python 3.12.3，**未安装 torch / torch_npu**（`import torch` 失败），评测**一律走 Docker 容器**；Docker 29.8.0（`/snap/bin/docker`），镜像源含 `quay.io/ascend/vllm-ascend`、内网 harbor（`10.19.28.45:8003`、`10.19.32.152:1780`、`10.19.93.215:5000`）、`aisbench/all-services` |
+| 磁盘 | `/data` **14T**（已用 59%）；`/` 7.4T（已用 21%）；模型落 `/data/ai-stack-models/models`（含 Qwen2.5/Qwen3 系列等），数据集落 `/data/datasets` |
 | 配套版本纪律 | CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK）严格配套，**不可混装**（见 [技能目录 §维护](04-skill-catalog-and-maintenance.md)） |
 
-首次上机按序执行（探针脚本示例）：
+首次上机按序执行（探针脚本示例；`msprof` 等工具不在默认 PATH，先 source 环境）：
 
 ```bash
 # 登录评测机（SSH 端口 22022，密钥 910b_ed25519）
 ssh -i ~/.ssh/910b_ed25519 -o IdentitiesOnly=yes -p 22022 root@10.19.93.115
 
+# 0) 加载 CANN 工具链（msprof / atc / hccl_test 等不在默认 PATH）
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+
 # 1) 8 卡健康与拓扑
 npu-smi info
 npu-smi topo
 
-# 2) msprof 最小探针（确认硬件计数器可读，防假活环境）
+# 2) msprof 最小探针（确认硬件计数器可读，防假活环境；在已装 torch_npu 的容器内执行）
 msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"
 
 # 3) 通信基线（hccl_test）

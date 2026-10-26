@@ -96,7 +96,10 @@
 
 | 项 | 事实 |
 | :--- | :--- |
-| 评测服务器 | `10.19.93.115`（SSH 端口 `22022`，密钥 `~/.ssh/910b_ed25519`），8×910B3，HBM 64GB/卡，`npu-smi 25.5.1` |
+| 评测服务器 | `10.19.93.115`（SSH 端口 `22022`，密钥 `~/.ssh/910b_ed25519`，免密；另有 `puaiuc` 账号），主机名 `phy-10-19-93-115`，Ubuntu 24.04 LTS，8×910B3，HBM 64GB/卡，`npu-smi 25.5.1` |
+| 系统与资源 | **192 核**，内存约 **1TB（1005 GB）**；`/data` **14T**（模型落 `/data/ai-stack-models/models`，数据集落 `/data/datasets`） |
 | 硬件代际 | `910B3`（A2/A3）与 `950PR/950DT`（A5 / arch35）；UB 组织、SIMD/SIMT、HiF8/MXFP、CCU 等差异见 [calibration-template.md](templates/calibration-template.md) 代际对照栏 |
-| CANN 版本 | **须上机核对**（CANN / torch_npu / PyTorch / 驱动 HDK 配套不可混装）；换版本必须重跑校准与复测 |
+| 卡间拓扑 | 单机 8 卡全互联 = **HCCS**（`npu-smi info -t topo` 实测，非 RoCE）；CPU 亲和绑 0-23/48-71/96-119/144-167 |
+| CANN 版本 | 实测 **CANN 9.0.0-beta.1**（`/usr/local/Ascend/cann` → `cann-9.0.0-beta.1`；`latest/version.cfg` 为空文件，勿靠它取版本）+ 驱动 **25.5.1**（`ascendhal 7.35.23`）；CANN / torch_npu / PyTorch / 驱动（HDK）配套不可混装，**换版本必须重跑校准与复测** |
+| 工具与宿主 | `msprof` / `msprof-analyze` / `atc` / `hccl_test` 等**不在默认 PATH**，须先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`；宿主无 torch / torch_npu，**评测一律走 Docker 容器**（Docker 29.8.0，`/snap/bin/docker`） |
 | 红线 | 禁止引用未核验的硬件数值；`P_eff` / `BW_eff` 一律本机实测后使用；`repos/refs/` 与门禁路径禁写 |
