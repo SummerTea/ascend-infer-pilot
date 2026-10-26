@@ -41,7 +41,7 @@
 | 算子开发（阶梯 4） | J4 决策 → J5 | [任务书](templates/task-spec-template.md) + `test_op.py` / `benchmark_op.py` |
 | 网络 / HCCL 排障 | J3 直接定位 | [诊断 SOP](docs/02-ascend-diagnosis-sop.md) |
 
-> **上表列的是「主攻阶段」，不是「可跳过 J0」**：任一入口都须先有 J0 定位卡（`workspace/<scenario-id>/ledger/01-triage.md`），否则不得进入 J4/J5。
+> **上表列的是「主攻阶段」，不是「可跳过 J0」**：任一入口都须先有 J0 定位卡（`workspace/<scenario-id>/ledger/01-triage.md`），否则不得进入 J1/J4/J5。
 
 ## 目录地图
 
