@@ -10,6 +10,7 @@
 | 算子/模块结构特征 | `<如 非标头维 MLA / MoE GMM / 垂直融合算子 / 权重重排 Loader>` |
 | 当前性能基线 | `<实测基线，相对 P_eff / BW_eff 表述，如 BW_util = 42%，延迟 1.2ms>` |
 | 目标性能预期 | `<相对 P_eff / BW_eff 表述，如 BW_util ≥ 75%，延迟 ≤ 0.7ms>` |
+| 定位卡引用 | `workspace/<scenario-id>/ledger/01-triage.md` 的定位卡（阶段 / 类别 / 证据 / 占比 / 候选阶梯 / 收益上限） |
 
 ## 二、源码落点（必填，J4 决策后由架构师声明）
 

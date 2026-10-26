@@ -1,4 +1,4 @@
-# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 8）
+# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 10）
 
 ## 0. 定位与入口导航
 
@@ -7,32 +7,46 @@
 | 入口 | 内容 | 用法 |
 | :--- | :--- | :--- |
 | [README.md](README.md) | 总览：6 步快速启动 + 任务类型速查 | 首次接手先读 |
-| [docs/](docs/) | 方法论主文：J1→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
+| [docs/](docs/) | 方法论主文：J0→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
 | [repos/](repos/) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | J1.5 盘点 / J3 归因 / J4 参考复用 |
 | `workspace/` | **不入库**：`<scenario-id>/`（`source/` + `optimized/` + `ledger/`）+ `_shared/calibration.md` | J4/J5 落点 / J6 过程留痕 |
 | [.agents/skills/](.agents/skills/) | 仅第三方技能：vendored（7）/ external（21） | 按 §7 技能路由表取用 |
 
-## 1. J1→J6 阶段路由表
+## 1.0 J0 定焦：先收窄再冻结
+
+**为什么**：J1 的四输入在**无焦点**时无法填——SLO 需依据可达上限，而可达上限取决于瓶颈在哪一段；经验表明直接进 J1→J2 会变成「全局普查」而**空转**。先收窄再冻结：用三环漏斗把「优化某模型」收窄成**一个**瓶颈或约束点，产出**定位卡**。
+
+**三环（一行）**：`R1 定阶段（prefill/decode/通信/调度/加载 占比排序）→ R2 定类别（算/读/发/传）→ R3 定落点与手段（哪个器件 + 候选阶梯 + 收益上限）`。
+
+**粗/精账本**：J0 用**粗口径** `P_eff≈α·P_peak` / `BW_eff≈β·BW_peak`（α≈0.65 / β≈0.70，**只判「算还是读」，不得用于 J6 门禁**）；定焦后 J2 只对焦点维度做**精校准**。
+
+**硬出口（四条）**：占比 ≥20% / `msprof` 证据 / 明确候选阶梯 / 收益上限 ≥ 目标 gap 50%；**全满足才可进 J1/J4**，否则回 R1/R2 换手段。**无定位卡不得进入 J4/J5**（硬约束）。
+
+**熔断**：R1~R3 **≤3 轮**（每轮记「学到什么 + 下轮换什么手段」），超限**升级给人**；「各段均衡且接近上限」→ 转**约束点分支**（容量/并行/精度/调度）。
+细则唯一权威：[docs/06 §2/§3/§4/§6/§7/§8](docs/06-bottleneck-triage.md)。
+
+## 1. J0→J6 阶段路由表
 
 **Step 0 起手**：
 
 1. **定 `scenario-id`**：命名式 `<卡数>x<硬件>-<模型>-<主攻>`，例 `2x910B-dsv41-flash-rocm-net`（与 `cases/<entry-id>.md` 的"来源场景"字段同名引用）。
 2. **备料**：`bash scripts/sync_ascend_skills.sh --category all`（第三方技能）+ `bash scripts/manage_repos.sh clone --targets --scenario <scenario-id>`（目标源码进 `workspace/<scenario-id>/source/`；参考底座 `bash scripts/manage_repos.sh clone --refs` 进 `repos/refs/`）。
-3. **建台账并从 `00-scope` 起**：`workspace/<scenario-id>/ledger/` 按 §1.5 顺序推进；机器档案（§9）在 `01-probe.md` 补齐。
+3. **建台账并从 `00-probe.md` 起**（先补机器档案与齐备性 → 再做 J0 定焦 `01-triage.md`）：`workspace/<scenario-id>/ledger/` 按 §1.5 顺序推进。
 
-首次接手先读 [README.md](README.md) 的快速启动与**任务类型速查**（据任务选定入口阶段）；本文件给出完整阶段链 J1→J6，**各阶段的出口条件不可跳**——入口可依任务速查选，出口条件一律从严。
+首次接手先读 [README.md](README.md) 的快速启动与**任务类型速查**（据任务选定入口阶段）；本文件给出完整阶段链 J0→J6，**各阶段的出口条件不可跳**——入口可依任务速查选，出口条件一律从严。
 
 | 阶段 | 目标 | 产出物 | 交付落点 | 判据 / 锚点 |
 | :--- | :--- | :--- | :--- | :--- |
-| J1 目标定义 | 冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/<scenario-id>/ledger/00-scope.md`（条目 md 仅在过验收态门禁后沉淀，见 §6.5） | 四维度齐全且无争议 ｜ [01 §2](docs/01-pipeline-and-ledger.md) |
-| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/<scenario-id>/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前；golden（独立黄金参考）落 `03-freeze-and-gate.md` | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/<scenario-id>/source/<engine>/`（只读阅读）；gap 清单落 `workspace/<scenario-id>/ledger/00-scope.md` | gap 逐项落到五阶梯某一级 ｜ [01 §3](docs/01-pipeline-and-ledger.md) |
-| J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/<scenario-id>/ledger/02-baseline-ledger.md` | 结果可复算、口径唯一 ｜ [01 §4](docs/01-pipeline-and-ledger.md) |
+| J0 定焦 | 收窄到**一个**瓶颈或约束点 | 定位卡（阶段/类别/证据/占比/候选阶梯/收益上限） | `workspace/<scenario-id>/ledger/01-triage.md` | 硬出口四条件全满足 ｜ [06 §6](docs/06-bottleneck-triage.md) |
+| J1 目标定义 | **围绕已定焦瓶颈**冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/<scenario-id>/ledger/02-scope.md`（条目 md 仅在过验收态门禁后沉淀，见 §6.5） | 四维度齐全且与定位卡一致 ｜ [01 §2](docs/01-pipeline-and-ledger.md) |
+| J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/<scenario-id>/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前；golden（独立黄金参考）落 `04-freeze-and-gate.md` | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/<scenario-id>/source/<engine>/`（只读阅读）；gap 清单落 `workspace/<scenario-id>/ledger/02-scope.md` | gap 逐项落到五阶梯某一级 ｜ [01 §3](docs/01-pipeline-and-ledger.md) |
+| J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/<scenario-id>/ledger/03-baseline-ledger.md` | 结果可复算、口径唯一 ｜ [01 §4](docs/01-pipeline-and-ledger.md) |
 | J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/<scenario-id>/ledger/iterations/` | 总耗时可映射明确归因 ｜ [02 §1](docs/02-ascend-diagnosis-sop.md) |
 | J4 干预决策 | 五阶梯按 ROI 排序，**动手前声明源码落点** | 决策记录 + 落点声明 | `workspace/<scenario-id>/optimized/` 或 `workspace/<scenario-id>/source/<engine>/` | 收益/成本可量化、可回退 ｜ [01 §5](docs/01-pipeline-and-ledger.md) |
 | J5 任务书交付 | 两阶段：方案评审 → 实现自测 | 任务书 + `test_op.py` / `benchmark_op.py` | `workspace/<scenario-id>/optimized/{plugins,kernels,tools}/` 或 `workspace/<scenario-id>/source/<engine>/` | 架构师评审通过、门禁所有权分离 ｜ [任务书模板](templates/task-spec-template.md)（docs 无 J5 专节） |
-| J6 双轨门禁 | 轨道 A 正确性 + 轨道 B 性能（探索态 / 验收态） | 门禁报告 | 过程 `workspace/<scenario-id>/ledger/`；入库 `cases/<entry-id>.md` §5 | 双轨全过、探索态→验收态 ｜ [01 §J6 实操](docs/01-pipeline-and-ledger.md) |
+| J6 双轨门禁 | 轨道 A 正确性 + 轨道 B 性能（探索态 / 验收态） | 门禁报告 | 过程 `workspace/<scenario-id>/ledger/04-freeze-and-gate.md` + `summary.md`；入库 `cases/<entry-id>.md` §5 | 双轨全过、探索态→验收态 ｜ [01 §J6 实操](docs/01-pipeline-and-ledger.md) |
 
-回边：J6 未达预期 → 回 J3 重新归因；J4 阶梯失败 → 回退上一阶梯；J2 证明物理不可达 → 回 J1 重谈 SLO。
+回边：J6 未达预期 → 回 J3 重新归因；J4 阶梯失败 → 回退上一阶梯；J2 证明物理不可达 → 回 J1 重谈 SLO；**J4/J5 无定位卡 → 回 J0**。
 
 干预五阶梯（J4 按 ROI 排序，失败回退上一阶梯）：`阶梯 1 配置与编排调优` / `阶梯 2 已有成熟后端切换` / `阶梯 3 Out-of-tree 插件扩展` / `阶梯 4 专用 Kernel 移植与开发` / `阶梯 5 底层引擎内核重写与 Fork`。
 
@@ -43,12 +57,12 @@
 **顺序（每场景按序执行，可复制）**：
 
 ```
-00-scope → 01-probe → 02-baseline-ledger → 03-freeze-and-gate → 04-bootstrap → loop: iterations/it-NNN → summary.md
+00-probe → 01-triage → 02-scope → 03-baseline-ledger → 04-freeze-and-gate → 05-bootstrap → loop: iterations/it-NNN → summary.md
 ```
 
-> 上述为 **7 个顺序步**；**台账 8 项中的 `state.json`** 随 loop **逐轮同步维护**，故不入顺序链。
+> 上述为 **8 个顺序步**；**台账 9 项中的 `state.json`** 随 loop **逐轮同步维护**，故不入顺序链。
 
-**与 §1 阶段对应**：J1→`00-scope`（四输入）；J1.5→`00-scope` 的 gap 段；J2→`02-baseline-ledger`；J3→`iterations/`；J4→`optimized/` 或 `source/`；J5→任务书 + `optimized/`；J6→`03-freeze-and-gate` + `summary.md` + 条目。
+**与 §1 阶段对应**：J0→`01-triage`；J1→`02-scope`（四输入）；J1.5→`02-scope` 的 gap 段；J2→`03-baseline-ledger`；J3→`iterations/`；J4→`optimized/` 或 `source/`；J5→任务书 + `optimized/`；J6→`04-freeze-and-gate` + `summary.md` + 条目。
 
 **loop 每轮（`iterations/it-NNN.md`）按序记录**（下列 5 条是 [docs/05 §3](docs/05-case-library-and-ledger.md) **10 个字段的无损归并**，逐项以该处为准）：
 
@@ -74,7 +88,7 @@
 
 - **强制**：J4/J5 动手前必须在任务书中显式声明「目标源码落点」（`workspace/<scenario-id>/optimized/{kernels,plugins,tools}/` \| `workspace/<scenario-id>/source/<repo>`）与「参考源码路径」（`repos/refs/<repo>`），未经声明不得编码。
 - `repos/refs/` 只读：需要复用其思路时在 `workspace/<scenario-id>/optimized/` 自研实现；`workspace/<scenario-id>/source/` 的改动必须 `export-patch` 到 `workspace/<scenario-id>/ledger/patches/`，交付以 patch 为准（脚本见 [manage_repos.sh](scripts/manage_repos.sh)）。
-- **构建 / 加载前提**：宿主通常无 torch / torch_npu，构建与运行一律在容器内，且须先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh` 才能用 `msprof` / `atc` / `hccl_test`；具体版本与镜像见本场景 `01-probe.md` 机器档案段；插件/kernel 的集成方式见 [docs/03 §3](docs/03-ascend-hardware-and-engines.md) 与 [docs/01](docs/01-pipeline-and-ledger.md) 阶梯 4 实操。
+- **构建 / 加载前提**：宿主通常无 torch / torch_npu，构建与运行一律在容器内，且须先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh` 才能用 `msprof` / `atc` / `hccl_test`；具体版本与镜像见本场景 `00-probe.md` 机器档案段；插件/kernel 的集成方式见 [docs/03 §3](docs/03-ascend-hardware-and-engines.md) 与 [docs/01](docs/01-pipeline-and-ledger.md) 阶梯 4 实操。
 
 ## 3. J2 双约束账本铁律
 
@@ -125,7 +139,7 @@
 | HCCL 与通信排障 | [docs/02](docs/02-ascend-diagnosis-sop.md) §`HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）` |
 | 迁移与图模式 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`CUDA→torch_npu 迁移与图模式修复` |
 | vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
-| 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
+| 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
 
 **第三方技能 → `.agents/skills/`**：`vendored/`（7，随仓库跟踪）+ `external/`（21，按域同步、内容被 gitignore，见 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh)）。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §第三方技能昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
@@ -140,11 +154,11 @@
 
 ## 9. 主机环境取证
 
-**新场景尚无 `01-probe.md` 机器档案段时**：先向持卡人索取接入信息（主机 / SSH 端口 / 密钥路径 / 账号）并写入本场景 `workspace/<scenario-id>/ledger/01-probe.md` 的机器档案段，再执行下列探针。**本仓库不承载任何机器专属值**（不写 IP / 端口 / 密钥 / 版本号）。
+**新场景尚无 `00-probe.md` 机器档案段时**：先向持卡人索取接入信息（主机 / SSH 端口 / 密钥路径 / 账号）并写入本场景 `workspace/<scenario-id>/ledger/00-probe.md` 的机器档案段，再执行下列探针。**本仓库不承载任何机器专属值**（不写 IP / 端口 / 密钥 / 版本号）。
 
-本机事实（登录方式 / 卡型 / HBM / 驱动、CANN 与工具版本 / 容器与镜像 / 磁盘与模型·数据集落点）记录在该场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的「机器档案」段（**不入库**；字段规范见 [docs/05 §3](docs/05-case-library-and-ledger.md)）。机器专属值不得写入本文件。
+本机事实（登录方式 / 卡型 / HBM / 驱动、CANN 与工具版本 / 容器与镜像 / 磁盘与模型·数据集落点）记录在该场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 的「机器档案」段（**不入库**；字段规范见 [docs/05 §3](docs/05-case-library-and-ledger.md)）。机器专属值不得写入本文件。
 
-通用探针命令（换机 / 换版本后重跑，把结果写入当前场景台账 `01-probe.md` 的机器档案段）：
+通用探针命令（换机 / 换版本后重跑，把结果写入当前场景台账 `00-probe.md` 的机器档案段）：
 
 ```
 ssh -i ~/.ssh/<密钥> -o IdentitiesOnly=yes -p <端口> root@<服务器IP>

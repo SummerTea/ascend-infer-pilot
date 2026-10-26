@@ -8,6 +8,8 @@
 
 ## 1. L1–L4 昇腾诊断漏斗
 
+> 本文档是 **J0 定焦**的**工具层索引**（L1→L4 各层用哪个工具、看哪个指标）。**J0 的收窄流程（三环）、硬出口四条件与熔断规程见 [docs/06-bottleneck-triage.md](06-bottleneck-triage.md)**——先按 J0 收窄到单一瓶颈，再回来用本文档的工具深入。
+
 编号是漏斗顺序（宏观在前），不是层级高低。**先量化差距，再定位瓶颈**——没有负载、SLO 与基线，任何 Profiler 结果都无法解释。
 
 ```
@@ -254,7 +256,7 @@ msprof-analyze calibrate_npu_gpu --gpu-profile <nsys SQLite> --npu-profile <NPU 
 
 ## HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）
 
-对应 L4 互联层的执行细节。**先分清拓扑再谈通信排障**——单机卡间互联形态（HCCS / RoCE / PCIe）以 `npu-smi info -t topo` 实测为准（本机拓扑与 CPU 亲和事实见当前场景台账 `workspace/<scenario-id>/ledger/01-probe.md` 的机器档案段），避免把 HCCS 问题按 RoCE 排查；**跨机**才涉及 RoCE。通信基线须与**同拓扑**历史基线比（偏差 > 10% 先查硬件），不对公开数字比。`hccl_test` / `ascend-dmi` 不在默认 PATH，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
+对应 L4 互联层的执行细节。**先分清拓扑再谈通信排障**——单机卡间互联形态（HCCS / RoCE / PCIe）以 `npu-smi info -t topo` 实测为准（本机拓扑与 CPU 亲和事实见当前场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 的机器档案段），避免把 HCCS 问题按 RoCE 排查；**跨机**才涉及 RoCE。通信基线须与**同拓扑**历史基线比（偏差 > 10% 先查硬件），不对公开数字比。`hccl_test` / `ascend-dmi` 不在默认 PATH，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
 
 ### 1. 拓扑判读（先分清 HCCS / RoCE）
 
