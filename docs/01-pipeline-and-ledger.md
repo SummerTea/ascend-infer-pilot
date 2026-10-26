@@ -238,7 +238,7 @@ flowchart TD
 
 ### 1. 读参考实现（J4 前先读再算）
 
-在 `repos/refs/` 找同结构参考（数据布局、向量化载入、Tiling 逻辑）；先 `bash scripts/manage_repos.sh clone <name>`。
+在 `repos/refs/` 找同结构参考（数据布局、向量化载入、Tiling 逻辑）；先 `bash scripts/manage_repos.sh clone <name>`（**refs 不需 `--scenario`**）。
 
 **完成标准**：能说出参考实现的 UB/Tile 划分与边界处理，并明确本次定制的差异点（否则不应启动阶梯 4）。
 
@@ -314,7 +314,7 @@ J6 双轨门禁的昇腾落地：轨道 A 正确性（L1/L2/L3 三级）+ 轨道
 - `evaluate`：量化门禁——目标值 + 容差判定，**禁止改评测口径**，0 分自愈链。
 - `tuning`：自动量化调优（档位搜索 + EP 并行）。
 
-参考底座 `repos/refs/msmodelslim/`（只读，先 `bash scripts/manage_repos.sh clone <name>`）。
+参考底座 `repos/refs/msmodelslim/`（只读，先 `bash scripts/manage_repos.sh clone <name>`，**refs 不需 `--scenario`**）。
 
 **完成标准**：导出量化权重（含 scale/zero-point 齐全）；`evaluate` 在目标容差内通过；`tuning` 记录档位与 EP 并行配置。
 

@@ -34,7 +34,7 @@
 2. **由 Agent 自主沉淀**：不做脚手架、不做模板文件；条目验收通过后由 Agent 按 §2 规范直接写 `cases/<entry-id>.md`，并同步更新 `cases/index.md`。
 3. **失败 / 反向结果不入库**：以「反模式」写进条目 md 第 6 节（供他人规避），或就地记入 `workspace/<scenario-id>/ledger/summary.md` 的反模式清单；不占 `cases/index.md` 行位。
 4. **交付物不入库**：patch、profiling、门禁产物一律留 `workspace/<scenario-id>/ledger/`（不入库）；条目 md 只写「关键 diff 摘录」与「证据路径引用」。
-5. **一条目一个 md**：`cases/<entry-id>.md`，`entry-id` 全局唯一；一条目跨多个模型 / 硬件时拆为多个 md。
+5. **一条目一个 md**：`cases/<entry-id>.md`，`entry-id` 全局唯一；**通用技术族条目可被多个 模型@硬件 引用**；若同一技术在不同 模型@硬件 下**结论不同**，则拆为多个**实例化** md。
 
 ---
 
@@ -56,7 +56,7 @@
 
 | 字段 | 值 |
 | :--- | :--- |
-| entry-id | `<唯一标识，如 op-fusion / net-transfer-fusion>` |
+| entry-id | `<唯一标识>`：优先**通用技术族**（如 `op-fusion`、`net-transfer-fusion`，跨模型/硬件可复用）；结论强绑定特定 模型@硬件 时用**实例化式** `<硬件>-<模型>-<技术族>`（如 `910b3-qwen2.5-7b-fused-rope`）。**命名规则**：优先通用技术族；仅当结论强绑定某 模型@硬件 时才实例化 |
 | 来源场景 | `<scenario-id>`（可多个，如 `2x910B-dsv41-flash-rocm-net`；过程台账在 `workspace/<scenario-id>/ledger/`，不入库） |
 | 模型@硬件 | `<模型名>@<910B3 / 950PR / 950DT>` |
 | 状态 | `<成功 / 部分>`（未达标 / 已回退条目不入库） |
@@ -65,7 +65,7 @@
 | 配套版本 | `<CANN ↔ torch_npu ↔ PyTorch ↔ 驱动>`（与台账冻结指纹一致） |
 | 硬件代际 | `<910B3（A2/A3）/ 950PR / 950DT（A5/arch35）>` |
 | 干预阶梯 | `<1~5>`（可多个，按主次排序） |
-| 关联台账路径 | `workspace/<scenario-id>/ledger/`（与「来源场景」对应，不入库） |
+| 关联台账路径 | `workspace/<scenario-id>/ledger/`（**按「来源场景」各列一条**；首个来源标记为**主场景**，不入库） |
 
 ## 1. 背景（★必填）
 <设备与并行形态、模型结构特征向量（注意力族 / 前馈形态 / 数值格式）、负载与 SLO、
@@ -79,7 +79,7 @@
 <瓶颈类别：算 / 读 / 发 / 传；AI vs B* 判定；msprof 证据摘要（五表关键行：
   Kernel / 通信重叠 / 融合模式 / 下发效率 / 内存效率）。>
 
-## 4. 修改方案
+## 4. 修改方案（★必填；纯方法论类条目可注明“不适用”）
 <所落阶梯与理由；被排除的更优 ROI 选项；关键 diff 摘录（完整 patch 在台账）；
   落点文件与接口（workspace/<scenario-id>/optimized/ 或 workspace/<scenario-id>/source/<engine>/）。>
 
@@ -95,13 +95,13 @@
 ### 2.3 最小示例（占位符）
 
 ```markdown
-# 条目：910b3-qwen2.5-7b-bwutil-fusedrope
+# 条目：910b3-qwen2.5-7b-fused-rope（实例化式示例：结论强绑定该 模型@硬件）
 
 ## 元信息头
 
 | 字段 | 值 |
 | :--- | :--- |
-| entry-id | `910b3-qwen2.5-7b-bwutil-fusedrope` |
+| entry-id | `910b3-qwen2.5-7b-fused-rope`（实例化式） |
 | 来源场景 | `910b3-qwen2.5-7b-bwutil` |
 | 模型@硬件 | `Qwen2.5-7B@910B3` |
 | 状态 | `成功` |
@@ -193,7 +193,7 @@
 
 **交付物落点军规**：
 
-1. 阶梯 3/4 的产出**优先落 `workspace/<scenario-id>/optimized/`**：可独立构建、测试、随根仓库版本化。
+1. 阶梯 3/4 的产出**优先落 `workspace/<scenario-id>/optimized/`**：可独立构建、测试；**交付以条目 md（`cases/`）沉淀**（`workspace/` 整体不入库）。
 2. 只有必须修改引擎源码才能实现的目标，才落 `workspace/<scenario-id>/source/<engine>/`，且必须用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出 patch 到 `workspace/<scenario-id>/ledger/patches/`（不入库），交付以 patch 为准。
 3. `repos/refs/` 只读，任何改动都禁止。
 
@@ -201,7 +201,7 @@
 
 1. **每场景独立一套 `workspace/<scenario-id>/{source,optimized,ledger}`**：`source/` 与 `optimized/` 按场景隔离，台账按 `scenario-id` 隔离；**场景之间可并发，互不污染**。
 2. **严禁跨场景写对方目录**：只读自己的 `workspace/<scenario-id>/`，避免并发写同一份 `source/` / `optimized/` / `ledger/`。
-3. **唯一共享是 `workspace/_shared/calibration.md`**：`P_eff` / `BW_eff` / α / β / 锁频命令 / 配套版本按 `<模型>@<硬件>` 分节，所有场景只读复用；**只追加新分节，避免并发写同一段**；复测由持卡人更新。
+3. **唯一共享是 `workspace/_shared/calibration.md`**：`P_eff` / `BW_eff` / α / β / 锁频命令 / 配套版本按 `<模型>@<硬件>` 分节，所有场景只读复用；**只追加新分节，避免并发写同一段**；**同一 `<模型>@<硬件>` 分节由持卡人独占更新，场景不得并行写同 key**；复测由持卡人更新。
 
 ### 4.3 workspace 不入库说明
 

@@ -20,7 +20,7 @@
 | | | `debug-distributed-hang` | sgl-project/sglang | 分布式卡死/挂起排查（集合通信死锁、rank 不齐、超时定位） |
 | **external** | 21 | 见 §2 全景索引表 | GitCode/GitHub 源仓 | 4 大域：operators(7) / network(4) / tooling(5) / engines(5) |
 
-> **vendored 上游来源**：`mooncake-api`、`mooncake-troubleshoot` 来自 `repos/refs/Mooncake/`（只读底座）；`evalscope` 上游为 `modelscope/evalscope`（**不在 `repos/manifest.yaml` 内**，直接本地入库）；`kernel-microbenchmark`、`triton-kernel-writing` 来自 `workspace/<scenario-id>/source/vllm/`；`kl-consistency-test`、`debug-distributed-hang` 来自 `workspace/<scenario-id>/source/sglang/`（vllm / sglang 需先 `bash scripts/manage_repos.sh clone <name>` 才有本地源码）。★本工程 `vendored/` 为**本地入库拷贝**，随根仓库跟踪，**不依赖运行时 clone**（上列来源仓仅说明出处）。自研知识已并入 `docs/01~04` 对应章节（主机环境事实见 `AGENTS.md.local`，不入库）。external 落点 `.agents/skills/external/<域>/<组名>/`（该目录内容被 `.gitignore` 忽略，仅保留 README.md 由脚本管理）。
+> **vendored 上游来源**：`mooncake-api`、`mooncake-troubleshoot` 来自 `repos/refs/Mooncake/`（只读底座）；`evalscope` 上游为 `modelscope/evalscope`（**不在 `repos/manifest.yaml` 内**，直接本地入库）；`kernel-microbenchmark`、`triton-kernel-writing` 来自 `workspace/<scenario-id>/source/vllm/`；`kl-consistency-test`、`debug-distributed-hang` 来自 `workspace/<scenario-id>/source/sglang/`（vllm / sglang 需先 `bash scripts/manage_repos.sh clone <name> --scenario <scenario-id>` 才有本地源码）。★本工程 `vendored/` 为**本地入库拷贝**，随根仓库跟踪，**不依赖运行时 clone**（上列来源仓仅说明出处）。自研知识已并入 `docs/01~04` 对应章节（主机环境事实见 `AGENTS.md.local`，不入库）。external 落点 `.agents/skills/external/<域>/<组名>/`（该目录内容被 `.gitignore` 忽略，仅保留 README.md 由脚本管理）。
 
 ---
 

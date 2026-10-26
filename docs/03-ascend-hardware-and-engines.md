@@ -72,7 +72,7 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
 ## 3. 引擎扩展挂载点索引（昇腾版）
 
-> **路径说明**：改引擎落 `workspace/<scenario-id>/source/<engine>/`（不入库；使用前先 `bash scripts/manage_repos.sh clone <name>`，manifest 见 `repos/manifest.yaml`）才有本地源码。**只读参考**一律放 `repos/refs/<repo>/`，严禁修改。改引擎必须用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出补丁。
+> **路径说明**：改引擎落 `workspace/<scenario-id>/source/<engine>/`（不入库；使用前先 `bash scripts/manage_repos.sh clone <name> --scenario <scenario-id>`，manifest 见 `repos/manifest.yaml`）才有本地源码。**只读参考**一律放 `repos/refs/<repo>/`，严禁修改。改引擎必须用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出补丁。
 
 ### 3.1 vllm-ascend / vLLM（`workspace/<scenario-id>/source/vllm-ascend/`、`workspace/<scenario-id>/source/vllm/`）
 
