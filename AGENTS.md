@@ -1,4 +1,4 @@
-# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 10）
+# AGENTS.md —— 昇腾推理优化工程 · Agent 治理规则（Phase 11）
 
 ## 0. 定位与入口导航
 
@@ -10,7 +10,7 @@
 | [docs/](docs/) | 方法论主文：J0→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
 | [repos/](repos/) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | J1.5 盘点 / J3 归因 / J4 参考复用 |
 | `workspace/` | **不入库**：`<scenario-id>/`（`source/` + `optimized/` + `ledger/`）+ `_shared/calibration.md` | J4/J5 落点 / J6 过程留痕 |
-| [.agents/skills/](.agents/skills/) | 仅第三方技能：vendored（7）/ external（21） | 按 §7 技能路由表取用 |
+| [.agents/skills/](.agents/skills/) | 第三方技能（平铺）：5 个入库 + 约 172 个同步而来（不入库） | 按 §7 技能路由表取用 |
 
 ## 1.0 J0 定焦：先收窄再冻结
 
@@ -108,7 +108,7 @@
 
 1. **热路径隐式同步**：`.item()` / `.cpu()` / `torch.nonzero()` / 基于张量结果的 Python `if`（摧毁异步发射与图录制）。
 2. **前向动态转换权重**：推理循环内 `dequantize()` / `.contiguous()`（重排与反量化必须在加载期一次完成）。
-3. **访存边界错误**：AscendC / Triton 非整除 Tile 下 `mask=` 缺失、偏移越界或静默错值。
+3. **访存边界错误**：非整除 Tile 下 `mask=` 缺失、偏移越界或静默错值（AscendC 实现 / Triton 排错均适用）。
 4. **低精度累加**：累加器必须显式 fp32（如 `tl.sum(x.to(tl.float32))`；`tl.dot` 默认 fp32 除外）。
 5. **测试套件人为弱化**：放宽容差（如 atol=1.0）或只测规整 shape。
 
@@ -141,14 +141,18 @@
 | vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
 | 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
 
-**第三方技能 → `.agents/skills/`**：`vendored/`（7，随仓库跟踪）+ `external/`（21，按域同步、内容被 gitignore，见 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh)）。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §第三方技能昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
+**第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §第三方技能昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
+
+- **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；入库仅 5 个 + README（白名单见 `.gitignore`），其余约 172 个同步而来、不入库。
+- **算子开发路线强制**：`AscendC` > `TileLang` > `PyPTO`/`CATLASS`；**Triton / Triton-Ascend 不在实现路线**（脚本 denylist 排除）。
+- **路由细则**（J0→J6 各环节该用哪些技能 + 重复对优先选用）：见 `.agents/skills/README.md`。
 
 ## 8. 脚本速用
 
 | 脚本 | 关键子命令 | 用途 |
 | :--- | :--- | :--- |
 | [manage_repos.sh](scripts/manage_repos.sh) | `--list [--scenario <id>]` / `clone [--targets\|--refs\|<name>\|URL] [--scenario <id>]` / `status [--scenario <id>]` / `export-patch <repo> --scenario <id>` | 目标源码（`workspace/<scenario-id>/source/`）与参考底座（`repos/refs/`）的克隆、巡检与补丁归档 |
-| [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {operators,network,tooling,engines,all} [--only <name>]` | 从 21 个外部源仓同步 SKILL.md 到 `.agents/skills/external/` |
+| [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` | 按 **13 仓 / 21 条 allowlist** 同步 SKILL.md，**平铺**到 `.agents/skills/`（不入库；Triton 一律排除） |
 
 > 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），与台账 `iterations/it-NNN.md` 互为素材。
 

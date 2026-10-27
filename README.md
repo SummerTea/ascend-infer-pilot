@@ -24,7 +24,7 @@
 
 > 前置：核对**当前场景台账** `workspace/<scenario-id>/ledger/00-probe.md` 的机器档案段（不入库）；缺失或换机/换版本时按 [AGENTS.md §9](AGENTS.md) 探针命令重跑并写入台账。
 
-1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（拉取 21 个外部源仓的 SKILL.md 到 `.agents/skills/external/`）。
+1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（按 **13 仓 / 21 条 allowlist** 拉取 SKILL.md，**平铺**到 `.agents/skills/`，不入库）。
 2. **克隆目标源码 + 建台账**：`scripts/manage_repos.sh clone --targets --scenario <id> && scripts/manage_repos.sh clone --refs`（按 [repos/manifest.yaml](repos/manifest.yaml) 浅克隆：targets 落到 `workspace/<scenario-id>/source/`，refs 落到 `repos/refs/`）；随后按 [docs/05 §3](docs/05-case-library-and-ledger.md) 建场景台账 9 项（`workspace/<scenario-id>/ledger/`，起点 `00-probe.md`；随后 **J0 定焦** `01-triage.md`）。
 3. **读方法论**：先读 [docs/06-bottleneck-triage.md](docs/06-bottleneck-triage.md)（**J0 定焦**：三环漏斗先收窄成一个瓶颈/约束点，冻结目标前必过）再读 [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md)（J0→J6 主线），诊断类任务加读 [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md)。
 4. **用模板派发**：用 [任务书模板](templates/task-spec-template.md) 写任务书（必填源码落点与参考路径）；实验记录与校准台账用 [PMR](templates/pmr-log-template.md)、[校准台账](templates/calibration-template.md) 两个模板。
@@ -54,7 +54,7 @@
 | `workspace/` | **工作区（不入库）**：`<scenario-id>/`（一个优化场景一份：`source/` / `optimized/` / `ledger/`）+ `_shared/calibration.md` | 每场景一份、自包含、并发安全 |
 | [scripts/](scripts/) | `manage_repos.sh` / `sync_ascend_skills.sh` | 源码与技能管理 |
 | [cases/](cases/) | **案例库（入库）**：条目 `cases/<entry-id>.md` + 索引 `cases/index.md` | 条目可被多场景引用；过程台账在 `workspace/<scenario-id>/ledger/` |
-| [.agents/skills/](.agents/skills/) | **仅第三方技能**：`vendored/`（7，随仓库跟踪）+ `external/`（21，按域同步、内容被 gitignore） | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
+| [.agents/skills/](.agents/skills/) | **第三方技能（平铺）**：5 个随仓库跟踪（白名单见 [.gitignore](.gitignore)）+ 约 172 个同步而来、不入库 | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
 
 ## 源码仓挂载（manage_repos.sh）
 
@@ -67,10 +67,10 @@
 
 ## 技能同步（sync_ascend_skills.sh）
 
-`scripts/sync_ascend_skills.sh --category all` 从 21 个外部源仓（operators / network / tooling / engines 四类）自动发现并同步 SKILL.md 技能到 `.agents/skills/external/<category>/<name>/`。
+`scripts/sync_ascend_skills.sh --category all` 按 **13 仓 / 21 条 allowlist**（开发 10 / 运维 9 / 门禁 2）发现并同步 SKILL.md 技能，**平铺**到 `.agents/skills/<skill-name>/`（不入库）。
 
-- `.agents/skills/external/` 被 [.gitignore](.gitignore) 忽略（仅保留 README.md），不会污染根仓库；**vendored/（7）受根仓库跟踪**，随工程版本化。
-- `--list` 离线查看源表（url/branch 已联网核验，勿改分支）；`--only <name>` 定向重同步。
+- `.agents/skills/` 平铺落点不入库（白名单见 [.gitignore](.gitignore)）：**5 个技能随仓库跟踪**，其余约 172 个同步而来、每次同步重新生成。
+- `--list` 离线查看源表（url/branch 已联网核验，勿改分支）；`--only <origin>` 定向重同步。
 
 ## 文档导航
 

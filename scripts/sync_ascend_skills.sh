@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# sync_ascend_skills.sh — allowlist 驱动：从 14 个昇腾生态源仓（22 条规则）发现并同步 SKILL.md 技能目录
+# sync_ascend_skills.sh — allowlist 驱动：从 13 个昇腾生态源仓（21 条规则）发现并同步 SKILL.md 技能目录
+# 优先级说明：本表是筛选过的 allowlist（上游 500+ → 21 条规则）；include 用逗号分隔 glob；
+#      Triton 一律由 denylist 兜底排除；算子开发优先级 AscendC > TileLang > PyPTO/CATLASS。
 # 落点（平铺）：.agents/skills/<技能目录名>/（不再有 external/<category>/<name>/ 层级）
 # 缓存：.cache/skills/<url-slug>/（同一 URL 多行规则共享，只 clone/fetch 一次）
 # 规则：include 为逗号分隔 glob，同时尝试匹配技能目录相对路径与目录名
@@ -23,12 +25,11 @@ skill_sources() {
   cat <<'EOF'
 origin|url|branch|include|note
 # ===== 开发（算子 / 模型接入 / 图模式 / 线性注意力）=====
-agent-skills-dev|https://gitcode.com/Ascend/agent-skills.git|master|ascendc-operator-*|AscendC 算子开发 13 件套
+agent-skills-dev|https://gitcode.com/Ascend/agent-skills.git|master|ascendc-operator-code-gen,ascendc-operator-compile-debug,ascendc-operator-design,ascendc-operator-dev,ascendc-operator-doc-gen,ascendc-operator-mssanitizer,ascendc-operator-performance-eval,ascendc-operator-performance-optim,ascendc-operator-precision-debug,ascendc-operator-precision-eval,ascendc-operator-project-init,ascendc-operator-testcase-gen,ascendc-operator-A5-migration,ascendc-operator-st-gen|AscendC 算子开发 14 件套
 agent-skills-atb|https://gitcode.com/Ascend/agent-skills.git|master|atb-*|ATB/ACLNN 迁移与调试
 agent-skills-catlass|https://gitcode.com/Ascend/agent-skills.git|master|catlass-operator-*|CATLASS 模板算子
 tilelang|https://github.com/tile-ai/tilelang-ascend.git|ascendc_pto|tilelang-op-*,tilelang-pass-*,tilelang-perf-*,tilelang-ascend-tile-api,tilelang-a5-sim-convert,tilelang-custom-skill/*,tilelang-vector-ascend-ops-migration|TileLang 全栈（含 Pass 层）
 pto|https://github.com/huawei-csl/pto-kernels.git|main|testing-pto-kernels|PyPTO 双代算子参考
-xllm-kernel|https://github.com/xLLM-AI/xllm.git|main|tilelang-ascend-kernel|TileLang kernel（含 Triton→TileLang 映射）
 xllm-tilelang|https://github.com/xLLM-AI/xllm-workflow.git|main|tilelang-pto-kernel-workflow|TileLang+PTO 工作流
 cannbot-model|https://github.com/ascend-ai-coding/awesome-ascend-skills.git|main|external/cannbot/model/*|model-infer-* 模型级优化
 cannbot-ops|https://github.com/ascend-ai-coding/awesome-ascend-skills.git|main|external/cannbot/ops/*,external/cannbot/ops-lab/tilelang/*|AscendC 最佳实践 / PyPTO / npu-arch
@@ -41,11 +42,11 @@ agent-skills-ops|https://gitcode.com/Ascend/agent-skills.git|master|hccl-test,as
 agent-skills-host|https://gitcode.com/Ascend/agent-skills.git|master|npu-smi,ascend-docker,cann-operator-env-config,atc-model-converter,npu-adapter-reviewer|主机/容器/环境/ATC
 god|https://github.com/XiaoLuoLYG/GOD.git|main|deepep-to-cam-converter,ascend-moe-optimizer-*|DeepEP→CAM / MoE 优化追踪
 mindie-motor|https://github.com/Ascend/MindIE-Motor.git|master|motor-*|PD 分离服务全生命周期
-xllm-ops|https://github.com/xLLM-AI/xllm-workflow.git|main|xllm-npu-*|xLLM NPU 运维（profiler/benchmark/incident）
+xllm-ops|https://github.com/xLLM-AI/xllm-workflow.git|main|xllm-npu-benchmark,xllm-npu-profiler,xllm-npu-incident-triage,xllm-npu-capacity-planner,xllm-npu-compute-simulation,xllm-npu-pipeline-analysis,xllm-npu-server-manager,xllm-npu-sota-loop,xllm-npu-code-review,xllm-npu-build-gate,xllm-npu-report-writer,xllm-experiment-lifecycle,xllm-npu-accuracy-debug,xllm-npu-xllm-ops-integration,xllm-npu-batch-perf|xLLM NPU 运维（profiler/benchmark/incident）
 vllm-ascend|https://github.com/vllm-project/vllm-ascend.git|main|vllm-ascend-*|官方插件（model-adapter/release）
 sglang-npu|https://github.com/LinyuanLi0046/Ascend-SGLang-Skills.git|main|npu-api-adaptation-checker,sglang-npu-adapter,test-regression-pr-locator|SGLang-NPU 适配检查
 # ===== 门禁（量化 / 精度 / 性能）=====
-msmodelslim|https://gitcode.com/Ascend/msmodelslim.git|master|*|量化与 evaluate/tuning
+msmodelslim|https://gitcode.com/Ascend/msmodelslim.git|master|quantization,tuning,sensitive-layer-analysis|量化与 evaluate/tuning
 mindie-sd-gate|https://github.com/Ascend/MindIE-SD.git|dev|accuracy-gate,perf-gate,quantization-dev,profiling-collect,profiling-analyze,performance-optimization|L1/L2/L3 与探索态/验收态
 EOF
 }
@@ -54,7 +55,7 @@ usage() {
   cat <<'EOF'
 用法: sync_ascend_skills.sh [选项]
 
-allowlist 驱动：从 14 个昇腾生态源仓（22 条规则）发现并同步 SKILL.md 技能目录。
+allowlist 驱动：从 13 个昇腾生态源仓（21 条规则）发现并同步 SKILL.md 技能目录。
 平铺落点：.agents/skills/<技能目录名>/；缓存复用 .cache/skills/<url-slug>/。
 
 选项:
@@ -154,9 +155,13 @@ repo_basename() {
 copy_skill() {
   local src="$1" dest="$2"
   mkdir -p "$dest" || return 1
-  if tar -C "$src" --exclude='.git' --exclude='*/.git' -cf - . | tar -C "$dest" -xf -; then
-    return 0
+  # -h：解引用符号链接。上游技能常用 `references/x.md -> ../../<repo>/...` 这类相对链接，
+  #     技能目录被“平铺”到 .agents/skills/<name>/ 后该相对路径失效（断链）；
+  #     解引用后拷贝真实内容。若上游本身就是悬空链接，tar 会告警，此处以 SKILL.md 是否落地为准。
+  if tar -C "$src" -h --exclude='.git' --exclude='*/.git' -cf - . 2>/dev/null | tar -C "$dest" -xf - 2>/dev/null; then
+    [ -f "$dest/SKILL.md" ] && return 0
   fi
+  [ -f "$dest/SKILL.md" ] && return 0
   return 1
 }
 
@@ -218,7 +223,7 @@ filtered_rows() {
   done < <(skill_sources)
 }
 
-# --list：完全离线，3 分组 + 22 行 + 合计
+# --list：完全离线，3 分组 + 21 行 + 合计
 cmd_list() {
   local group="" label="" origin url branch include note
   local n_dev=0 n_ops=0 n_gate=0 total=0
