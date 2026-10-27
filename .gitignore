@@ -7,9 +7,14 @@
 # 工作区：源码/优化后/台账，不入版本控制
 /workspace/
 
-# === 远端同步的第三方技能目录（仅保留 README 说明）===
-/.agents/skills/external/*
-!/.agents/skills/external/README.md
+# === 技能目录（Agent Skills 规范：平铺；仅白名单技能入库）===
+/.agents/skills/*
+!/.agents/skills/README.md
+!/.agents/skills/evalscope/
+!/.agents/skills/kl-consistency-test/
+!/.agents/skills/mooncake-api/
+!/.agents/skills/mooncake-troubleshoot/
+!/.agents/skills/debug-distributed-hang/
 
 # === 技能同步缓存 ===
 /.cache/
