@@ -11,9 +11,11 @@
 #      标记异源/无标记：同名技能近似相同（near_identical）→ CONFLICT 保留权威源（先到先得）；
 #      实质不同 → 改名为 <origin>--<name> 并存（frontmatter name: 同步改写，RENAMED 计数）；
 #      --force 仅对「已存在且异源/无标记」强制覆盖原目录（不改名），仍不覆盖被 git 跟踪的。
-# 持续更新：每次同步即刷新到上游分支最新；--update-lock 把上游 commit 记录到 scripts/skills.lock
-#      （入库、随仓库跟踪）；--verify 校验磁盘/缓存与 lock 一致（CI 可用）；--pinned 按 lock 检出
-#      指定版本复现。--prune 清陈旧：删除「有 .origins 标记但本次未命中任何 include」的目录。
+# 持续更新：每次同步即刷新到上游分支最新；--update-lock 把上游 commit 与磁盘技能
+#      （name/origin/SKILL.md sha256）记录到 scripts/skills.lock（入库、随仓库跟踪）；
+#      --verify 校验磁盘/缓存与 lock 一致（含内容哈希，CI 可用）；--pinned 按 lock 检出指定版本复现。
+#      --prune 清陈旧：删除「有 .origins 标记但本次未命中任何 include」的目录；某 origin 本次
+#      0 命中（allowlist glob 全部失效或上游布局变更）时整源跳过清理（SKIP PRUNE）并以非 0 退出。
 # 变更报告：末尾按 ADDED/REFRESHED/RENAMED/CONFLICT/SKIPPED/REMOVED 分组打印名称清单；
 #      --report <path> 另写 TSV（type<TAB>name<TAB>origin）。
 
@@ -33,6 +35,10 @@ REMOVED=0
 FAIL=0
 DEAD_GLOBS=0
 ORIGINS_DIR="$DEST_ROOT/.origins"
+# R1：本次各 origin 命中数汇总（bash 3.2 无关联数组，用临时文件）；0 命中源 -> 整源跳过 prune + 非 0 退出
+ZERO_HIT_ORIGINS=""
+PRUNE_SKIPPED=0
+HITS_FILE=""
 REPORT_ROWS=""
 TOUCHED=""
 CURRENT_ORIGINS=""
@@ -86,7 +92,9 @@ allowlist 驱动：从 13 个昇腾生态源仓（21 条规则）发现并同步
       仅处理 origin 匹配的规则行（可与 --category 组合）。
   --dry-run
       执行克隆/复用缓存与匹配，但不拷贝，只列出将同步的技能（含目标路径）；
-      并逐 include glob 自检命中数，0 命中的 glob 计为 DEAD_GLOBS。
+      并逐 include glob 自检命中数，0 命中的 glob 计为 DEAD_GLOBS；
+      每行结束若该源 hits=0 打印 WARN 源，结束时有 0 命中源（或 DEAD_GLOBS>0）退出码=1
+      （非 dry-run 同样生效，正常同步仍完成只是失败退出以便 CI/例程发现）。
   --force
       仅对「已存在且来源标记异源/无标记」的目标强制覆盖（先安全删除再拷贝）；
       被 git 跟踪的入库技能无论何种情况都不覆盖。
@@ -95,7 +103,9 @@ allowlist 驱动：从 13 个昇腾生态源仓（21 条规则）发现并同步
       未命中任何 include」的目录。安全护栏：① 只对本次过滤后的 origin 集合生效
       （.origins 内容不属于本次 --category/--only 过滤后的集合则不删）；② 被 git 跟踪
       的 5 个入库技能绝不删（git ls-files --error-unmatch 判定）；③ 仅允许单层目录名
-      （非空、非 ./..、不含 /）并复核 [ -d ] 后才删；④ .agents/skills/README.md 永不删。
+      （非空、非 ./..、不含 /）并复核 [ -d ] 后才删；④ .agents/skills/README.md 永不删；
+      ⑤ 某 origin 本次 0 命中（allowlist glob 全部失效或上游布局变更）→ 整源跳过清理
+      （SKIP PRUNE），避免一条 --prune 误删该源全部技能，且最终退出码非 0。
       只允许与 --category all（或不指定，默认 all）一起使用；与 --only 互斥（违规 exit 1）。
       --dry-run --prune 只列出 WOULD REMOVE，不删除；删除的目录计入 REMOVED。
   --report <path>
@@ -103,12 +113,13 @@ allowlist 驱动：从 13 个昇腾生态源仓（21 条规则）发现并同步
       分组，以 type<TAB>name<TAB>origin 写 TSV 到 <path>（不截断到 50 个），便于 diff/审阅。
   --update-lock
       正常执行一次同步后，把 13 个上游仓的 (url, branch, commit) 与磁盘上 .origins 标记的
-      (name, origin) 写入 scripts/skills.lock（入库、随仓库跟踪；commit 取 .cache/skills HEAD；
-      默认全量同步，建议不要与 --category/--only 组合）。仅同步成功（FAIL=0）时写 lock。
+      (name, origin, SKILL.md sha256) 写入 scripts/skills.lock（入库、随仓库跟踪；commit 取
+      .cache/skills HEAD；默认全量同步，建议不要与 --category/--only 组合）。
+      仅同步成功（FAIL=0 且无 0 命中源）时写 lock。
   --verify
       只读自检（不联网、不改文件）：磁盘 .origins 与 lock 的 skills 段比对（缺失 / 多余 /
-      origin 不符、目录缺失），缓存仓 HEAD 与 lock 的 repos commit 比对（不符打印 DRIFT）；
-      有任何差异 exit 1，全一致打印 OK 并 exit 0。
+      origin 不符、目录缺失、SKILL.md 内容哈希不符打印 CONTENT DRIFT），缓存仓 HEAD 与 lock
+      的 repos commit 比对（不符打印 DRIFT）；有任何差异 exit 1，全一致打印 OK 并 exit 0。
   --pinned
       复现模式：若 scripts/skills.lock 存在，按 lock 记录的 commit 检出缓存仓
       （git -C <cache> checkout -q <commit>，不 fetch）再同步，用于复现 lock 对应版本；
@@ -125,7 +136,8 @@ allowlist 驱动：从 13 个昇腾生态源仓（21 条规则）发现并同步
     标记异源/无标记：同名技能近似相同（体积差≤10% 且改动行≤5%）→ CONFLICT
     保留权威源（先到先得的那一份）；实质不同 → 改名为 <origin>--<name> 并存（RENAMED，
     frontmatter name: 同步改写）；--force 仅对此类强制覆盖原目录（不改名）。
-  - 拷贝后若 frontmatter name: 与目录名不一致，改写为目录名。
+  - 拷贝后去除 SKILL.md 的 UTF-8 BOM（上游部分文件带 BOM，awk 匹配不到 frontmatter）；
+    若 frontmatter name: 与目录名不一致，改写为目录名。
   - 单源失败计入 FAIL 不中断；末尾汇总 ADDED / REFRESHED / RENAMED / SKIPPED / CONFLICT /
     REMOVED / FAIL，并按类型打印变更报告（名称清单，每类最多列 50 个，超出显示「… 其余 N 个」）。
 
@@ -288,11 +300,31 @@ git_tracked() {
   git -C "$ROOT" ls-files --error-unmatch ".agents/skills/${dir_name}/SKILL.md" >/dev/null 2>&1
 }
 
+# R4：SKILL.md 内容哈希（macOS shasum -a 256，回退 Linux sha256sum），缺失/失败输出空
+sha256_of() {
+  local f="$1" h
+  if command -v shasum >/dev/null 2>&1; then
+    h="$(shasum -a 256 "$f" 2>/dev/null || true)"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    h="$(sha256sum "$f" 2>/dev/null || true)"
+  else
+    return 0
+  fi
+  printf '%s\n' "${h%% *}"
+}
+
 # 归一化 frontmatter name：仅当 name:（去引号后）≠ 目录名时改写该行；不改被 git 跟踪的技能
+# R3：上游 ascend-communication-analysis / ascend-profiler-collect-adaption 的 SKILL.md 以
+#     UTF-8 BOM（ef bb bf）开头，awk 的 /^---$/ 匹配不到 frontmatter——先去 BOM（tail -c +4
+#     重写）再处理，顺带让严格 YAML 解析器可读
 normalize_name() {
-  local dest="$1" dir_name="$2" cur
+  local dest="$1" dir_name="$2" cur bom
   [ -f "$dest/SKILL.md" ] || return 0
   git_tracked "$dir_name" && return 0
+  bom="$(head -c 3 "$dest/SKILL.md" | od -An -tx1 | tr -d ' \n')"
+  if [ "$bom" = "efbbbf" ]; then
+    tail -c +4 "$dest/SKILL.md" > "$dest/SKILL.md.tmp" && mv "$dest/SKILL.md.tmp" "$dest/SKILL.md"
+  fi
   cur="$(awk 'BEGIN{f=0} /^---[[:space:]]*$/{f++; next} f==1 && /^name:[[:space:]]*/{sub(/^name:[[:space:]]*/,""); gsub(/^"|"$/,""); sub(/[[:space:]]+$/,""); print; exit}' "$dest/SKILL.md")"
   [ "$cur" = "$dir_name" ] && return 0
   awk -v dir="$dir_name" 'BEGIN{f=0} /^---[[:space:]]*$/{f++; print; next} f==1 && /^name:[[:space:]]*/{print "name: " dir; next} {print}' \
@@ -444,6 +476,7 @@ process_row() {
   local cache_dir rel dir_name dest src name marker
   local hits=0 added=0 refreshed=0 renamed=0 skipped=0 conflict=0 accepted_rel=""
   local rest glob re c i refresh=0 new_dir new_dest new_marker
+  local nl=$'\n' claimed="" claimed_row=""
   echo ""
   echo "---- [${g}] ${origin} (branch=${branch}) ----"
   cache_dir="$CACHE_DIR/$(url_slug "$url")"
@@ -451,6 +484,7 @@ process_row() {
     echo "  FAIL：${origin} 缓存目录缺失（${cache_dir}）" >&2
     FAIL=$((FAIL + 1))
     echo "  [${origin}] hits=0 added=0 refreshed=0 renamed=0 skipped=0 conflict=0"
+    printf '%s\t0\n' "$origin" >> "$HITS_FILE"
     return 0
   fi
   # 收集本次发现的所有技能相对路径（父目录去重后的全集）
@@ -507,6 +541,12 @@ process_row() {
     dest="$DEST_ROOT/$dir_name"
     src="$cache_dir/$rel"
     [ "$rel" = "." ] && src="$cache_dir"
+    # R5：同源内同名覆盖告警——同 origin 内后一条路径将覆盖先前已接受的同名目标目录（last-wins，仅告警不改行为）
+    claimed_row="$(printf '%s\n' "$claimed" | awk -F'\t' -v n="$dir_name" '$1==n{print $2; exit}')"
+    if [ -n "$claimed_row" ]; then
+      echo "  WARN 同源同名覆盖: ${dir_name}（${rel} 覆盖 ${claimed_row}）"
+    fi
+    claimed="$claimed${claimed:+$nl}${dir_name}"$'\t'"${rel}"
     refresh=0
     if [ -e "$dest" ]; then
       # 已存在：被 git 跟踪 → CONFLICT（绝不覆盖）
@@ -644,12 +684,17 @@ process_row() {
     fi
   done
   echo "  [${origin}] hits=${hits} added=${added} refreshed=${refreshed} renamed=${renamed} skipped=${skipped} conflict=${conflict}"
+  # R1：0 命中即告警（allowlist glob 全部失效或上游布局变更）；每行结束写一次命中数汇总
+  if [ "$hits" -eq 0 ]; then
+    echo "  WARN 源 ${origin} 本次 0 命中（allowlist glob 全部失效或上游布局变更）"
+  fi
+  printf '%s\t%s\n' "$origin" "$hits" >> "$HITS_FILE"
 }
 
 # --prune：删除「由本脚本安装（有 .origins 标记）但本次未命中任何 include」的目录
 run_prune() {
   local dry_run="$1"
-  local candidates=0 name origin f
+  local candidates=0 name origin f skipped_origins=""
   if [ ! -d "$ORIGINS_DIR" ]; then
     if [ "$dry_run" -eq 1 ]; then
       echo "WOULD REMOVE: 0（.origins 不存在）"
@@ -667,6 +712,17 @@ run_prune() {
     [ -n "$origin" ] || continue
     # 护栏 1：只对本次过滤后的 origin 集合生效
     origin_in_set "$origin" || continue
+    # 护栏 5（R1）：某 origin 本次 0 命中 → 整源跳过清理（allowlist glob 失效或上游布局变更，
+    # 避免一条 --prune 误删该源全部技能），计入 PRUNE_SKIPPED
+    case " $ZERO_HIT_ORIGINS " in
+      *" $origin "*)
+        case " $skipped_origins " in *" $origin "*) continue ;; esac
+        skipped_origins="$skipped_origins $origin"
+        PRUNE_SKIPPED=$((PRUNE_SKIPPED + 1))
+        echo "SKIP PRUNE: ${origin} 本次 0 命中（allowlist glob 失效或上游布局变更），跳过清理"
+        continue
+        ;;
+    esac
     # 护栏：本次 prepare 失败的源不清理（避免误删）
     case " $FAILED_ORIGINS " in *" $origin "*) continue ;; esac
     # 本次已安装/刷新/改名 → 不算陈旧
@@ -753,7 +809,7 @@ cmd_update_lock() {
       [ -f "$f" ] || continue
       name="${f##*/}"
       origin="$(cat "$f" 2>/dev/null || true)"
-      printf 'skill\t%s\t%s\n' "$name" "$origin"
+      printf 'skill\t%s\t%s\t%s\n' "$name" "$origin" "$(sha256_of "$DEST_ROOT/$name/SKILL.md")"
     done | LC_ALL=C sort
   } > "$tmp"; then
     rm -f -- "$tmp"
@@ -772,7 +828,7 @@ cmd_verify() {
     return 1
   fi
   local n_repos=0 n_skills=0 drift=0 issues=0
-  local tag url branch commit cache head name origin lk dk
+  local tag url branch commit cache head name origin lk dk lkh dkh
   # --- repos 段：缓存仓 HEAD vs lock commit ---
   while IFS=$'\t' read -r tag url branch commit; do
     [ "$tag" = "repo" ] || continue
@@ -819,6 +875,15 @@ cmd_verify() {
       echo "缺失: ${name}（目录不存在）"
       issues=$((issues + 1))
     fi
+    # R4：SKILL.md 内容哈希比对（lock 第 4 列 vs 磁盘实算；含旧 lock 无哈希列 → 判漂移）
+    lkh="$(awk -F'\t' -v n="$name" '$1=="skill" && $2==n {print $4; exit}' "$lock")"
+    if [ -f "$DEST_ROOT/$name/SKILL.md" ]; then
+      dkh="$(sha256_of "$DEST_ROOT/$name/SKILL.md")"
+      if [ "$lkh" != "$dkh" ]; then
+        echo "CONTENT DRIFT: ${name}（磁盘 ${dkh:-空} ≠ lock ${lkh:-空}）"
+        issues=$((issues + 1))
+      fi
+    fi
   done < <(comm -12 \
       <(awk -F'\t' '$1=="skill"{print $2}' "$lock" | LC_ALL=C sort) \
       <(for f in "$ORIGINS_DIR"/*; do [ -f "$f" ] || continue; printf '%s\n' "${f##*/}"; done | LC_ALL=C sort))
@@ -827,7 +892,7 @@ cmd_verify() {
     echo "校验失败：DRIFT ${drift} 处 / 技能差异 ${issues} 处"
     return 1
   fi
-  echo "OK: 磁盘与 lock 一致（${n_skills} 技能 / ${n_repos} 源）"
+  echo "OK: 磁盘与 lock 一致（${n_skills} 技能 / ${n_repos} 源）（含内容哈希）"
   return 0
 }
 
@@ -839,6 +904,9 @@ cmd_sync() {
     echo "错误：未找到 git。同步技能需要 git（浅克隆与 fetch），请先安装 git。" >&2
     exit 1
   fi
+  # R1：按 origin 汇总本次命中数（bash 3.2 无关联数组，用 PID 后缀临时文件）
+  HITS_FILE="${TMPDIR:-/tmp}/sync_hits.$$.tsv"
+  : > "$HITS_FILE"
   # 统计选中行数：用于 --only 无匹配的报错
   while IFS='|' read -r g origin url branch include note; do
     n_rows=$((n_rows + 1))
@@ -869,6 +937,13 @@ cmd_sync() {
     case " $failed " in *" $url "*) continue ;; esac
     process_row "$g" "$origin" "$url" "$branch" "$include" "$dry_run" "$force"
   done < <(filtered_rows "$want" "$only")
+  # R1：读命中数汇总 → 0 命中源记入 ZERO_HIT_ORIGINS（prune 整源保护 + 非 0 退出依据）
+  ZERO_HIT_ORIGINS=""
+  while IFS=$'\t' read -r o h; do
+    if [ "$h" -eq 0 ]; then
+      ZERO_HIT_ORIGINS="$ZERO_HIT_ORIGINS $o"
+    fi
+  done < "$HITS_FILE"
   # pass 3：--prune 清陈旧（仅全量 + 无 --only 时允许，main 已校验）
   if [ "$prune" -eq 1 ]; then
     run_prune "$dry_run"
@@ -877,6 +952,12 @@ cmd_sync() {
   echo "汇总：ADDED ${ADDED} / REFRESHED ${REFRESHED} / RENAMED ${RENAMED} / SKIPPED ${SKIPPED} / CONFLICT ${CONFLICT} / REMOVED ${REMOVED} / FAIL ${FAIL}"
   if [ "$dry_run" -eq 1 ]; then
     echo "DEAD_GLOBS ${DEAD_GLOBS}"
+  fi
+  if [ -n "$ZERO_HIT_ORIGINS" ]; then
+    echo "ZERO_HIT_ORIGINS:${ZERO_HIT_ORIGINS}"
+  fi
+  if [ "$PRUNE_SKIPPED" -gt 0 ]; then
+    echo "PRUNE_SKIPPED: ${PRUNE_SKIPPED}（0 命中源已整源跳过清理）"
   fi
   print_report
   if [ -n "$report" ]; then
@@ -887,7 +968,13 @@ cmd_sync() {
     fi
     echo "报告已写入: ${report}"
   fi
-  [ "$FAIL" -eq 0 ]
+  # R1：FAIL / DEAD_GLOBS / 0 命中源 / prune 整源跳过 → 非 0 退出（正常同步仍完成，失败退出以便 CI/例程发现）
+  if [ "$FAIL" -ne 0 ] || [ "$DEAD_GLOBS" -gt 0 ] || [ -n "$ZERO_HIT_ORIGINS" ] || [ "$PRUNE_SKIPPED" -gt 0 ]; then
+    rm -f -- "$HITS_FILE"
+    return 1
+  fi
+  rm -f -- "$HITS_FILE"
+  return 0
 }
 
 main() {

@@ -14,193 +14,193 @@ repo	https://github.com/LinyuanLi0046/Ascend-SGLang-Skills.git	main	28bc64c7b5cb
 repo	https://gitcode.com/Ascend/msmodelslim.git	master	a223fa16f7818d4f7507a8eaa65ef49fab0425df
 repo	https://github.com/Ascend/MindIE-SD.git	dev	3fe16399b7bd6bdea4fa5c4bc751441c78f97d69
 # ===== skills =====
-skill	accuracy-gate	mindie-sd-gate
-skill	aiss-tiling-solver	cannbot-ops
-skill	ascend-cluster-compare	msagent-profiler
-skill	ascend-cluster-fast-slow-rank-detector	msagent-profiler
-skill	ascend-communication-analysis	msagent-profiler
-skill	ascend-computation-analysis	msagent-profiler
-skill	ascend-docker	agent-skills-host
-skill	ascend-fusion-op-replace	msagent-profiler
-skill	ascend-moe-optimizer-auto-trace	god
-skill	ascend-moe-optimizer-trace-analyzer	god
-skill	ascend-msprof-analyze-cli	msagent-profiler
-skill	ascend-npu-snapshot-analyzer	msagent-profiler
-skill	ascend-prof-compare	msagent-profiler
-skill	ascend-profiler-collect-adaption	msagent-profiler
-skill	ascend-profiler-data-validation	msagent-profiler
-skill	ascend-profiler-db-explorer	msagent-profiler
-skill	ascend-profiling-anomaly	agent-skills-ops
-skill	ascend-schedule-analysis	msagent-profiler
-skill	ascendc-api-best-practices	cannbot-ops
-skill	ascendc-blaze-best-practice	cannbot-ops
-skill	ascendc-code-review	cannbot-ops
-skill	ascendc-crash-debug	cannbot-ops
-skill	ascendc-direct-invoke-template	cannbot-ops
-skill	ascendc-docs-search	cannbot-ops
-skill	ascendc-env-check	cannbot-ops
-skill	ascendc-operator-A5-migration	agent-skills-dev
-skill	ascendc-operator-code-gen	agent-skills-dev
-skill	ascendc-operator-compile-debug	agent-skills-dev
-skill	ascendc-operator-design	agent-skills-dev
-skill	ascendc-operator-dev	agent-skills-dev
-skill	ascendc-operator-doc-gen	agent-skills-dev
-skill	ascendc-operator-mssanitizer	agent-skills-dev
-skill	ascendc-operator-performance-eval	agent-skills-dev
-skill	ascendc-operator-performance-optim	agent-skills-dev
-skill	ascendc-operator-precision-debug	agent-skills-dev
-skill	ascendc-operator-precision-eval	agent-skills-dev
-skill	ascendc-operator-project-init	agent-skills-dev
-skill	ascendc-operator-st-gen	agent-skills-dev
-skill	ascendc-operator-testcase-gen	agent-skills-dev
-skill	ascendc-precision-debug	cannbot-ops
-skill	ascendc-regbase-best-practice	cannbot-ops
-skill	ascendc-runtime-debug	cannbot-ops
-skill	ascendc-tiling-design	cannbot-ops
-skill	atb-aclnn-operator-migration	agent-skills-atb
-skill	atb-aclnn-operator-replacement-designer	agent-skills-atb
-skill	atb-atk-testcase-generator	agent-skills-atb
-skill	atb-csv-testcase-generator	agent-skills-atb
-skill	atb-csv-tester	agent-skills-atb
-skill	atb-debug-guide	agent-skills-atb
-skill	atb-golden-developer	agent-skills-atb
-skill	atb-knowledge-generalize	agent-skills-atb
-skill	atb-nnal-installer	agent-skills-atb
-skill	atb-op-knowledge-extract	agent-skills-atb
-skill	atb-op-knowledge-update	agent-skills-atb
-skill	atb-ops-to-aclnn-migration-workflow	agent-skills-atb
-skill	atb-pybind-bindgen	agent-skills-atb
-skill	atb-pybind-test-generator	agent-skills-atb
-skill	atb-tbe-adapter-adapt	agent-skills-atb
-skill	atb-testframework-build	agent-skills-atb
-skill	atc-model-converter	agent-skills-host
-skill	cann-operator-env-config	agent-skills-host
-skill	cannbot-ops--tilelang-api-best-practices	cannbot-ops
-skill	cannbot-ops--tilelang-op-design	cannbot-ops
-skill	cannbot-ops--tilelang-programming-model-guide	cannbot-ops
-skill	catlass-operator-code-gen	agent-skills-catlass
-skill	catlass-operator-design	agent-skills-catlass
-skill	catlass-operator-dev	agent-skills-catlass
-skill	catlass-operator-performance-optim	agent-skills-catlass
-skill	compare-result-analyzer	msagent-operator
-skill	deepep-to-cam-converter	god
-skill	deterministic-calculation-analysis	msagent-operator
-skill	fla-ascend-performance	fla
-skill	fla-correctness-coverage	fla
-skill	fla-optimization-loop	fla
-skill	hccl-test	agent-skills-ops
-skill	memory-analysis	msagent-profiler
-skill	mindstudio-cpu-binding	msagent-profiler
-skill	model-infer-fusion	cannbot-model
-skill	model-infer-graph-mode	cannbot-model
-skill	model-infer-kvcache	cannbot-model
-skill	model-infer-migrator	cannbot-model
-skill	model-infer-multi-stream	cannbot-model
-skill	model-infer-parallel-analysis	cannbot-model
-skill	model-infer-parallel-impl	cannbot-model
-skill	model-infer-precision-debug	cannbot-model
-skill	model-infer-prefetch	cannbot-model
-skill	model-infer-runtime-debug	cannbot-model
-skill	model-infer-superkernel	cannbot-model
-skill	motor-deploy	mindie-motor
-skill	motor-deploy-build-wheel	mindie-motor
-skill	motor-deploy-config-edit	mindie-motor
-skill	motor-deploy-configure	mindie-motor
-skill	motor-deploy-k8s	mindie-motor
-skill	motor-deploy-preflight	mindie-motor
-skill	motor-dev	mindie-motor
-skill	motor-diagnosis	mindie-motor
-skill	motor-diagnosis-connectivity	mindie-motor
-skill	motor-diagnosis-control-plane	mindie-motor
-skill	motor-diagnosis-deployer	mindie-motor
-skill	motor-diagnosis-k8s	mindie-motor
-skill	motor-diagnosis-performance-anomaly	mindie-motor
-skill	motor-diagnosis-startup	mindie-motor
-skill	motor-reliability	mindie-motor
-skill	motor-scale	mindie-motor
-skill	motor-smoke-suite	mindie-motor
-skill	motor-validation	mindie-motor
-skill	motor-validation-accuracy	mindie-motor
-skill	motor-validation-benchmark	mindie-motor
-skill	motor-validation-functional	mindie-motor
-skill	motor-validation-performance	mindie-motor
-skill	motor-validation-smoke	mindie-motor
-skill	msagent-profiler-breakdown	msagent-profiler
-skill	msdebug-basic-usage	msagent-operator
-skill	msot-msopprof-operator-profiler	msagent-operator
-skill	mssanitizer-basic-usage	msagent-operator
-skill	mstx-report-soft-sync	msagent-operator
-skill	npu-adapter-reviewer	agent-skills-host
-skill	npu-api-adaptation-checker	sglang-npu
-skill	npu-arch	cannbot-ops
-skill	npu-smi	agent-skills-host
-skill	op-mfu-calculator	msagent-profiler
-skill	op-mfu-profiler	msagent-profiler
-skill	ops-performance-tuning	msagent-operator
-skill	ops-precision-standard	cannbot-ops
-skill	ops-profiling	cannbot-ops
-skill	perf-gate	mindie-sd-gate
-skill	performance-optimization	mindie-sd-gate
-skill	precision-debugger	msagent-operator
-skill	profiling-collect	mindie-sd-gate
-skill	pypto-api-explore	cannbot-ops
-skill	pypto-golden-generate	cannbot-ops
-skill	pypto-intent-understand	cannbot-ops
-skill	pypto-op-design	cannbot-ops
-skill	pypto-op-develop	cannbot-ops
-skill	pypto-op-perf-tune	cannbot-ops
-skill	pypto-precision-compare	cannbot-ops
-skill	pypto-precision-debug	cannbot-ops
-skill	quantization	msmodelslim
-skill	quantization-dev	mindie-sd-gate
-skill	sensitive-layer-analysis	msmodelslim
-skill	sglang-npu-adapter	sglang-npu
-skill	test-regression-pr-locator	sglang-npu
-skill	testing-pto-kernels	pto
-skill	tilelang-a5-sim-convert	tilelang
-skill	tilelang-api-best-practices	tilelang
-skill	tilelang-ascend-tile-api	tilelang
-skill	tilelang-debug-helper	tilelang
-skill	tilelang-env-check	tilelang
-skill	tilelang-error-fixer	tilelang
-skill	tilelang-github-operations	tilelang
-skill	tilelang-op-design	tilelang
-skill	tilelang-op-develop	tilelang
-skill	tilelang-op-developer	cannbot-ops
-skill	tilelang-op-test-design	tilelang
-skill	tilelang-pass-analyzer	tilelang
-skill	tilelang-pass-design	tilelang
-skill	tilelang-pass-generate	tilelang
-skill	tilelang-pass-workflow-analyzer	tilelang
-skill	tilelang-perf-optimization	tilelang
-skill	tilelang-programming-model-guide	tilelang
-skill	tilelang-pto-kernel-workflow	xllm-tilelang
-skill	tilelang-review	tilelang
-skill	tilelang-submodule-pull	tilelang
-skill	tilelang-vector-ascend-ops-migration	agent-skills-dev
-skill	torch-ascendc-op-extension	cannbot-ops
-skill	torch-custom-ops-guide	cannbot-graph
-skill	torch-npugraph-ex-compile-error-diagnosis	cannbot-graph
-skill	torch-npugraph-ex-dfx-triage	cannbot-graph
-skill	torch-npugraph-ex-knowledge	cannbot-graph
-skill	torch-npugraph-ex-runtime-error-diagnosis	cannbot-graph
-skill	torch-npugraph-ex-template	cannbot-graph
-skill	tuning	msmodelslim
-skill	vllm-ascend-deploy	agent-skills-host
-skill	vllm-ascend-model-adapter	vllm-ascend
-skill	vllm-ascend-release	vllm-ascend
-skill	xllm-experiment-lifecycle	xllm-ops
-skill	xllm-npu-accuracy-debug	xllm-ops
-skill	xllm-npu-batch-perf	xllm-ops
-skill	xllm-npu-benchmark	xllm-ops
-skill	xllm-npu-build-gate	xllm-ops
-skill	xllm-npu-capacity-planner	xllm-ops
-skill	xllm-npu-code-review	xllm-ops
-skill	xllm-npu-compute-simulation	xllm-ops
-skill	xllm-npu-incident-triage	xllm-ops
-skill	xllm-npu-pipeline-analysis	xllm-ops
-skill	xllm-npu-profiler	xllm-ops
-skill	xllm-npu-report-writer	xllm-ops
-skill	xllm-npu-server-manager	xllm-ops
-skill	xllm-npu-sota-loop	xllm-ops
-skill	xllm-npu-xllm-ops-integration	xllm-ops
+skill	accuracy-gate	mindie-sd-gate	261d48d13198c152c086c400af5d7be72c1fc716c94473b9c1642e9e8906ae65
+skill	aiss-tiling-solver	cannbot-ops	8d596f4d61f9438633846ddc3d45e97eb0331cbcba5bc2a85424f5c47560c008
+skill	ascend-cluster-compare	msagent-profiler	374821117a0e5d8ece5466b20ed81eb4bb217b86bd574768880a907565d38dae
+skill	ascend-cluster-fast-slow-rank-detector	msagent-profiler	3977d701f9acc7f568d37e17220688885bc443c9cda0cfb2d5865196e4533eb5
+skill	ascend-communication-analysis	msagent-profiler	b7088d3194e3f795ee6e6207f8b36e2e402a305c42bfb964e4617a0a71d82a88
+skill	ascend-computation-analysis	msagent-profiler	2df6a32c4dbea45130740ec933bdf07bf28f506480d3e006a85431e38335be88
+skill	ascend-docker	agent-skills-host	885e51174323e9696541d1cc231fdb0c838e9b45615adda3163734d10852d169
+skill	ascend-fusion-op-replace	msagent-profiler	ce765bbfaa6f09434a41968f08cbe4904e9424a61f3350bacb56659f9c72434e
+skill	ascend-moe-optimizer-auto-trace	god	229d65be0d4dde870e724b6f1e1955a939cab9de853ac20dd765fdacd1179b77
+skill	ascend-moe-optimizer-trace-analyzer	god	5ff28d84022a14518cd103d016ba69c5c1541fc95d1c75753ca2890431091eb1
+skill	ascend-msprof-analyze-cli	msagent-profiler	77a9a4d2a7afb16b571165409a44a26f929ca08963abec9e340f250f24541b78
+skill	ascend-npu-snapshot-analyzer	msagent-profiler	adeb7202c03af13fe75068b69cb97de8d35cb121d5ffc8b5b4672d7f836d1ba3
+skill	ascend-prof-compare	msagent-profiler	f9bf8da18273129a65a9226a1e5a4d5b611b91db3de760c9797f0f3f46751de8
+skill	ascend-profiler-collect-adaption	msagent-profiler	4edd59c395c5d5241ae47dcfa974c5a102c9bd7d2229c27984de32802b83f2ac
+skill	ascend-profiler-data-validation	msagent-profiler	dfc4bc57789e3c0552b59b0a1b7254f4e3ac1e0c083c72592527f1c1818f22be
+skill	ascend-profiler-db-explorer	msagent-profiler	5286b7b2aac98d76617f8b74a9da50a78ac3ead3f4125eafdaba8eeb4f29cfba
+skill	ascend-profiling-anomaly	agent-skills-ops	24440a3e66f0a8cf7de3fc9875aafa37c45c55170f859e50ad0fc192479d4d58
+skill	ascend-schedule-analysis	msagent-profiler	0371b25bf1bf1ef34f79980ab2e32e8dd55c864d9b52c06ca74da7969f63553d
+skill	ascendc-api-best-practices	cannbot-ops	b2f0e96d84e39f7a3abf6f65634d099f75b72baf10d2b1d9d11c8abb69bc3d99
+skill	ascendc-blaze-best-practice	cannbot-ops	06381021f468364f19499db235e5c085ce91bd600eb777180cc7ba0814eca036
+skill	ascendc-code-review	cannbot-ops	16c385112afafcbb0eabf035a349f9f4bb60d0004248500ff486ddc8941d90a7
+skill	ascendc-crash-debug	cannbot-ops	8d5f9448de3d0093da8626f764ad910a5333acf8264f202f1c640ff34e6e2c77
+skill	ascendc-direct-invoke-template	cannbot-ops	a458004eeeef3d3b2b78b52229cafbda8a4dcd549e0ba3b2edd629e807399fef
+skill	ascendc-docs-search	cannbot-ops	fe32e16c9189254824c8bd91257c41be2b9372ec92563b834b34b8f8bbbce098
+skill	ascendc-env-check	cannbot-ops	007ca55a4c54022d9145d5a53930d766873fcd7ad8dd7410ced54d325f4f5f52
+skill	ascendc-operator-A5-migration	agent-skills-dev	268c1099df857a274393a11feac0ab7aa5162a1c7effb097ac1ae65c3d609e81
+skill	ascendc-operator-code-gen	agent-skills-dev	581339f25c621f5ee1ff390916b01a7a347ea2e65fce3d18239752ca68b7926c
+skill	ascendc-operator-compile-debug	agent-skills-dev	6a0f7d428fc9094f2f9840f743dad42b8a0c18367169c5658cd5bc7262395bd5
+skill	ascendc-operator-design	agent-skills-dev	9d5fc986c5753d6d3e0be8a315a4361c08b76fab8b22eaa2dfaa256ffa68fb23
+skill	ascendc-operator-dev	agent-skills-dev	78e046f093b670d548a3bc1db6f8344bf169ff971deeff18d2e50394758f34c9
+skill	ascendc-operator-doc-gen	agent-skills-dev	32714d75ab289d4d6e89af4919a0ef2e0d42cedaca76008af84cb6af18db3202
+skill	ascendc-operator-mssanitizer	agent-skills-dev	46b5ca696a4869842e2e55853387f85e4d169e63bd2aef0887de188ee86cebbc
+skill	ascendc-operator-performance-eval	agent-skills-dev	a064fec3ec258e8b4d0d5466a1d83ce717855375b8f7093b65600e0e53017637
+skill	ascendc-operator-performance-optim	agent-skills-dev	91cfed248a9f85482b7b4efc28ea49032a0824cb530fa820d6afd0af868fc1f4
+skill	ascendc-operator-precision-debug	agent-skills-dev	10a9bc17b7b44743ef2bf7df3472341f35510cdc64fd083d7868a8ce2299c79b
+skill	ascendc-operator-precision-eval	agent-skills-dev	94e80d676c3635d06f664106d28a2bc2928f1a876b1c7756fb7e6ebdfa7dd212
+skill	ascendc-operator-project-init	agent-skills-dev	40d9e3e30cc3b294fff48f14f944b661b509f59a098efa379bec3ba0a29fea07
+skill	ascendc-operator-st-gen	agent-skills-dev	13708684ae3e15c019ede46b9a63dc7849b2e5b7ab4a3e61b0fc1a0235c8186a
+skill	ascendc-operator-testcase-gen	agent-skills-dev	73cf4e4ff0afbf57c72eb08f0fe5df25f4a65a00382b7d28aeb752d232ea7554
+skill	ascendc-precision-debug	cannbot-ops	1cfd915651e27d446667b0d8f590f6dc627d768461ba599f6f10fd84c800e962
+skill	ascendc-regbase-best-practice	cannbot-ops	8f604acbaae056df3597b8b4fcbe78b632df1a526e220558c7dde53465b29f3c
+skill	ascendc-runtime-debug	cannbot-ops	bd36ac2d5c18c954b0e5e7270e3c982c6f63e42c34c8dc87e5825e0c9c3d4e5c
+skill	ascendc-tiling-design	cannbot-ops	63dec6e83fedc386304406836adba07ae6cf5c1d13bf999385dea9eaf38f82ea
+skill	atb-aclnn-operator-migration	agent-skills-atb	c071fe07c534d6e4e0d2015710821ad7149e2e86bfa952e0ae395a385f146938
+skill	atb-aclnn-operator-replacement-designer	agent-skills-atb	ebd429c37803842cc831e5f84a78390dfc71de84164ccfe781a0bb143bb09d38
+skill	atb-atk-testcase-generator	agent-skills-atb	bfcf35b5eb5911e42acd8fc4909675aa49b1761f9d9faea6a7519aa19480a3f5
+skill	atb-csv-testcase-generator	agent-skills-atb	121018af4b9418c861598ff05cf38b0e099477d50d127cadd0ff46d3dc43e718
+skill	atb-csv-tester	agent-skills-atb	9869b48c75196d8920d8b60b0c81888aec015baac162b68917ca79a330751d56
+skill	atb-debug-guide	agent-skills-atb	97bcd1866ba33683f7c0cd00ece495d2d9d9c03d81bd7d79767e88cf1bd73f99
+skill	atb-golden-developer	agent-skills-atb	9cc6cea2e8f3126d1832816c1d554e6458dc2d6d149e7b9843c8067c8aea24aa
+skill	atb-knowledge-generalize	agent-skills-atb	d2dcffe9fda970ef3417f36003824984f240f84e073ba3f8bb93abaae4fff80a
+skill	atb-nnal-installer	agent-skills-atb	b3bd2914f57c63e05b5a27f4d4892ea1f56d9ec2810c1a698b83c27025aaddbc
+skill	atb-op-knowledge-extract	agent-skills-atb	a63e88c717c83f45f73b43127875a61a26e6411a8a0598b8629997f95d0bfe32
+skill	atb-op-knowledge-update	agent-skills-atb	ae5db9377017b90c6eb45734a225782836b3be01c6c0e01581e99af533aa91fc
+skill	atb-ops-to-aclnn-migration-workflow	agent-skills-atb	9b0cb8de8f878bcb710294eb14a4e16b28528717358ab97cdac2ea368259d9b2
+skill	atb-pybind-bindgen	agent-skills-atb	a790fa90eea9e5d845df2c453b3b7b26b5c3df24e25594933b1750257d767501
+skill	atb-pybind-test-generator	agent-skills-atb	425b37259883a960847febbe14689816d852eb15452440cbef0c022a4c21e172
+skill	atb-tbe-adapter-adapt	agent-skills-atb	49f907e2f9a806719cc56ac789e50c304e3d914406e6cdc4a96d9d1c31b8d68e
+skill	atb-testframework-build	agent-skills-atb	0a0e5548490fd864613de3bd2396e2b88a3a0a4b9555051c691320fa640167af
+skill	atc-model-converter	agent-skills-host	0a1aeef4b6ffbf1afc748bc230e2db2afac39a389dcded0534ec5528aa531d37
+skill	cann-operator-env-config	agent-skills-host	fb136ce5da57a60cdbacc0528437285db6bc4a9f2a02fcb2eeb921555bcfd6c4
+skill	cannbot-ops--tilelang-api-best-practices	cannbot-ops	bdec18ae0f6a35f93f644a6f0ffcc61f2fd319b972b51acb727beff5e129ec64
+skill	cannbot-ops--tilelang-op-design	cannbot-ops	41426cd135c95208f99de5aa6133d38c555f9e64040a702514c4af806c7fc4f8
+skill	cannbot-ops--tilelang-programming-model-guide	cannbot-ops	59dac347dbc68339e30e44f4dfd4000d4aa2df3e014997f74db735b5638df426
+skill	catlass-operator-code-gen	agent-skills-catlass	5b9ab231cee89433970a0ff2bf130f9d3e6b429f1bb215a8fd1557d73e7c2c91
+skill	catlass-operator-design	agent-skills-catlass	382229f1f815bc5042236a639b9e898955bbd0f9b903a1a35559ce3aeadf0467
+skill	catlass-operator-dev	agent-skills-catlass	110d07fe5913f3de1342348302df4a65ef76d798add590519045fc9bd9df2aa6
+skill	catlass-operator-performance-optim	agent-skills-catlass	21115ae769a8bf51449b79c7f779bf78bcc5bcbdf060bab63f362fcdb633a4b0
+skill	compare-result-analyzer	msagent-operator	bbacb1fcd7c32aa0bc88878f7f7ed551a06428927a9edd1890b0b832d1447da3
+skill	deepep-to-cam-converter	god	4e729708335c407a035abfa343139610b133fff23fab631e8d0c95b54cf6b3a9
+skill	deterministic-calculation-analysis	msagent-operator	8c60e662b282b4001ccb54b0c78a5dc32afeab504a5f50a7ca68390d5528ec1f
+skill	fla-ascend-performance	fla	f6448ecd62153163a1db49890903ab20931dfd3fcf8087206b81140d31dfda28
+skill	fla-correctness-coverage	fla	e1e7bfcaea5306fdd24946b916638f6c38f27ab37f6e5d9a12b2a6868f7ae147
+skill	fla-optimization-loop	fla	8f5e21f599487f5eaca235e53412c7ad60e63438f24e0fe21e98582d27f07b0d
+skill	hccl-test	agent-skills-ops	da3a701a31233dc12245b37994c4063ac7683968cfecc4e17b438c17487a1901
+skill	memory-analysis	msagent-profiler	0627fee6572505640c9018c7d634e4997f6ee88135a18c984e1c38859f02ccfa
+skill	mindstudio-cpu-binding	msagent-profiler	1e0d6dd66bd719a9b8ff697ac6a0d572c2880be0e61999f61c57809ba113ddef
+skill	model-infer-fusion	cannbot-model	5f9fcf5df0931146b25375309c821d1e1a416e9ba87d6d9d5eb84738b0e77fdd
+skill	model-infer-graph-mode	cannbot-model	ff427f385019711bc53754251381f241382b0f11054526f1f387ffa028e95584
+skill	model-infer-kvcache	cannbot-model	9d2ca711ddb542e81d716c84d89ba57f80ff3b8ad9975a80d6092ca58a48f007
+skill	model-infer-migrator	cannbot-model	4191de21ddf1edf684d4776c133712ac3a0ac80467f66315f1f493f77c0450bb
+skill	model-infer-multi-stream	cannbot-model	ce8ba7e8ee9800157a3c63fc5d18c9a16632ba3e42d2bbb035f5753dc91c762a
+skill	model-infer-parallel-analysis	cannbot-model	47de16ff0f7921255e5105aa45b3d52b5f6ee41609c715cfd30f5d5f759f4bc9
+skill	model-infer-parallel-impl	cannbot-model	bafd4a3b59cfb92bdb63b81aa3ec5b33e89243def5b5c79123ce0e30167c424b
+skill	model-infer-precision-debug	cannbot-model	5bbd8d94da62ef018c38751be4d4fcc83bac26e9972564142b979f4fed74e53a
+skill	model-infer-prefetch	cannbot-model	9b05fa37ddee064c735fb601691e06b2aa89594acb9830130b54a38106041dc8
+skill	model-infer-runtime-debug	cannbot-model	05d2ffad028a00cc17ffac31958dcb05e5b25a439fcf330afa3dff53d5cb9a32
+skill	model-infer-superkernel	cannbot-model	83dc56dc3b54cc55c7cf62815f92c33e7fc94b8b32989c568d249599e92e69e5
+skill	motor-deploy	mindie-motor	e380fecf4128f7b328dccc283aa48b026ab890aa70514a68ee4b1dd015806616
+skill	motor-deploy-build-wheel	mindie-motor	f264a6593b14640e46ab8d14005fe22daa0e58b3068dc91ed7b03a86b76cda63
+skill	motor-deploy-config-edit	mindie-motor	9e6f13a7f0b728112c3bc9c6db439e2ba740b7e7c5aabfacc2b111012b252130
+skill	motor-deploy-configure	mindie-motor	1ddbb22ddb94ff8d8292ae45db45af319d3f084684475da2c26f0573d7763f77
+skill	motor-deploy-k8s	mindie-motor	6d0c74115523d4a2a08af5b09603f7a5a79427748c2378bbc11262aa24d2ba3b
+skill	motor-deploy-preflight	mindie-motor	51037bab56a4afa55ff3d76841f0e31a825c93e3aa1d90d4ad736a7663b87d91
+skill	motor-dev	mindie-motor	d5f875b9bd8dc10cd119dfc98d3e2bb26611e42f07b06b989c353b8ab20e03fd
+skill	motor-diagnosis	mindie-motor	e076d7314f0c2a6643f7d351500c80afda78f3fecf801fd228fd21ffb78e151d
+skill	motor-diagnosis-connectivity	mindie-motor	114c3b8c9dcfd62ed896ebc3bb95b837f8b9448bd8c0bf9d0c728886efe17177
+skill	motor-diagnosis-control-plane	mindie-motor	04bea0ef2886150260ef730dedf757ba91535331f2b0093229b1a1cc1abdd918
+skill	motor-diagnosis-deployer	mindie-motor	a03e84b02515a7a63b66ae2a819dee5b3be06498f69e61ea86c3a5924289a462
+skill	motor-diagnosis-k8s	mindie-motor	929b4e6c7b8fb83b2fdc2d14f4cfd310901ddacc83c8002780b6c61ba8c02a9c
+skill	motor-diagnosis-performance-anomaly	mindie-motor	8d6189e5319bf8e224221beb8952421f7988ac0f3fded0fb810d97e2f042baab
+skill	motor-diagnosis-startup	mindie-motor	5d79732e5d3bd951d7380ff78b58fc6bc8b510c1790caa20a2cfeaa4fe296324
+skill	motor-reliability	mindie-motor	fd5fc255fe48c0491fada09de221f3931fb406143720f0aa7804920468c263e4
+skill	motor-scale	mindie-motor	b798b05d3bca8a4ba9525cca1dda44412da488ab0dd0529a9c9d1d86a012c5ce
+skill	motor-smoke-suite	mindie-motor	c19a0e0fb7db6d38201b2b3e4c3e2c47732027a69189c97695f47631b58a2625
+skill	motor-validation	mindie-motor	ebb9fa290089fdc9b76f985f6f0affbdf2e7b3890a045360163bc4bc3e59b270
+skill	motor-validation-accuracy	mindie-motor	7faed27582e6a4e9d21b5c15d5870d09ebae1a542622b59d70c9ccd513287f2b
+skill	motor-validation-benchmark	mindie-motor	fc0713f00a26863340157c3dbb84d5cf322aa3c9b27e1b03750719f923bf0230
+skill	motor-validation-functional	mindie-motor	a049641ce5170c01a1623abdeb6893483f6dca3d9ddd5478878c73028115f3d9
+skill	motor-validation-performance	mindie-motor	4a4f269ae41772ecc16cc745a2c4cee987c7b87078cc594b000da2f68db59c20
+skill	motor-validation-smoke	mindie-motor	d5cc10d0871ae20164e3ee0b1c0a6c043f61715315c26ecbceba8ae6adb2c89a
+skill	msagent-profiler-breakdown	msagent-profiler	da82214c6efc868daf63aa96931ce5443d02f9e0e7b88e58de2fd545dc45d844
+skill	msdebug-basic-usage	msagent-operator	932846743fccf669722258c2f1f6d8d9daecf6549dbbcef090cd74c4e1b24605
+skill	msot-msopprof-operator-profiler	msagent-operator	f797297f8401c6baaa9eed8d1be746f7d56e67587a30479fdc3efe058638aa26
+skill	mssanitizer-basic-usage	msagent-operator	466d9e9f8f768ccf8df62825119cc3f473a19467093a3a788aa057b851403e90
+skill	mstx-report-soft-sync	msagent-operator	0e991b02a6721d76526fc5bac354a4e199434be2ec0cfdbfcf7b808b4b59a622
+skill	npu-adapter-reviewer	agent-skills-host	919793f57f3520566cbcc4345faac9f0bbbe09d8850f679f63141dea8556c61d
+skill	npu-api-adaptation-checker	sglang-npu	31a25494398cb6427b0c484058eb8628397dc9031dd4e6d3cb4f294b5cb0212b
+skill	npu-arch	cannbot-ops	c306e91822db3619a0fede0d2497d0ddb1043297686f234b86c7038f0ae793d7
+skill	npu-smi	agent-skills-host	d639ab8edc91cad5b1ed626eea8093a7f5038a494eee12590db94cb59ef91b1d
+skill	op-mfu-calculator	msagent-profiler	ce9d334a083db56b869c33d1fa866814ec4da7a55f15adc347e041a9033ebd6c
+skill	op-mfu-profiler	msagent-profiler	2320113886391dcde10715f082b96675a62066d71cb693221ebbd0ee55632c08
+skill	ops-performance-tuning	msagent-operator	8b82df41b5de744c553ae516c0590eb9fa46eac58da121b7c6a836955e69054f
+skill	ops-precision-standard	cannbot-ops	ebd14ac704fb0d68b5c367a914ec5b33ed2e65ddad0406f91acb3b63d7b25fee
+skill	ops-profiling	cannbot-ops	19ad11e73b114e4efd60bc1a4442e055b4d092dcf3a1fe18f256b8b9bc877d19
+skill	perf-gate	mindie-sd-gate	995b847b6c689a49ee6e45bac0af3ca4df705cb5796da29ed61a252dd7de6fb9
+skill	performance-optimization	mindie-sd-gate	0485102ca9b8d7bc70d6bce2526078dab6c8ee1298e92072606ee5b87c36ab97
+skill	precision-debugger	msagent-operator	1c1e812cd1412a70c4c1171289394705f77eb499c0c7806c3b88d92300047e72
+skill	profiling-collect	mindie-sd-gate	1ce0c667eff5406c663ad004bcb7c2224f5fae643adf65038a4063ef2c30cc1d
+skill	pypto-api-explore	cannbot-ops	083dae394ab091c60720f369b85d397b0cf45486d7a43eb6e9cbb0a44babd420
+skill	pypto-golden-generate	cannbot-ops	a6a69d1075cf2b5aed43d9043bb3bbb3f15470a34b6da2b27b52fa0364bbf840
+skill	pypto-intent-understand	cannbot-ops	3c5524f82295f6cc162e42c4185b5949b3b1961e7ddd63afcfab5b1871bc3315
+skill	pypto-op-design	cannbot-ops	f194fc1b17445fafc943c51b8fe5a4b19be14e358d40dad3462831fd63f8e45c
+skill	pypto-op-develop	cannbot-ops	56e448fb4c13878bf51862a9beb2e21e15e380a0c5e98b3b3f1510146fa8210c
+skill	pypto-op-perf-tune	cannbot-ops	9e8f7741064c8b0c636a95eae6eec742c155fe7274472af9db61bea0e5e27dfb
+skill	pypto-precision-compare	cannbot-ops	2cbead8dd01b1e3fd85371ab39e4c3bd82c355114e263570ecee0682372dbba4
+skill	pypto-precision-debug	cannbot-ops	84e7970ca69c4d7bb62dfbb25c2baf783d781f3a022155f2ffbd56190b6080ad
+skill	quantization	msmodelslim	a667691ec5e7ae2f5c690b0966a210aeaa309292a4f2a0d4e60967df384d7e54
+skill	quantization-dev	mindie-sd-gate	907b981d252520f4e9d3e4b64e4ead918b9f2aff5efa2eeaa16093e358b24ba9
+skill	sensitive-layer-analysis	msmodelslim	433ca01a523f33ce546b8be353887b34bd261a3bff5593baffb6f630de0eaa6e
+skill	sglang-npu-adapter	sglang-npu	a4850bdad10c6652e9878492a4071886b5beedeb0e06c904b5fd81921db77382
+skill	test-regression-pr-locator	sglang-npu	8e6d52be530a6f6a385a961040d7c8026bc0d31730a820431f2e8b5c3b7b03ca
+skill	testing-pto-kernels	pto	2328d3f55dd0f9eb28781462f7e137a10401ea18d7f08282aa44ae26996f0e18
+skill	tilelang-a5-sim-convert	tilelang	8025c7c385946a179070b08e3bd86034e97791e17e3a977d52faebbe13f590e1
+skill	tilelang-api-best-practices	tilelang	490471d5e945fe9bae366da71d0afc28c514218d04810339706cce2c77e21667
+skill	tilelang-ascend-tile-api	tilelang	74641ab4a1e0913407458324280b8bb8bb9356947aa168d7a62391b70540d72b
+skill	tilelang-debug-helper	tilelang	cf66d84ad3a59bfacfe29d52403ff4600047db5bcabf08fe1c94b0e6fb86d35a
+skill	tilelang-env-check	tilelang	0b739a67f03bed44949a56f751f4967582ddde577333d2665d78c353e56f8e46
+skill	tilelang-error-fixer	tilelang	c75d4015e4b09d9355eefb34a1655b0e490533c005bc013dff63d4a42494e913
+skill	tilelang-github-operations	tilelang	77f698126e885ee4229326e68dae75183d65d35fe5a4c5dc708d7a0958249ab6
+skill	tilelang-op-design	tilelang	1df54d4c849446b919f628523641c3d7aa9a3dfc22c076aa1429747d0c282da5
+skill	tilelang-op-develop	tilelang	9b9f4162ac852b2c4a7d504801be9da760499cfeaef2d96eb02e0cb97c90c290
+skill	tilelang-op-developer	cannbot-ops	3699fbac73ccc8d7c57bddc5456822d0b4beddfeb6bc07e8abffeb1bebed89bc
+skill	tilelang-op-test-design	tilelang	4efc129f3d83c4f3464e3199651c7e98211624839e9dea4531de1f66ca444696
+skill	tilelang-pass-analyzer	tilelang	c7f8a04e0b97ce49e3b024c0f18964f108e6e33df8ee66e68218949ccc15294a
+skill	tilelang-pass-design	tilelang	c3089b5a849a5f83c67db7e1479fc4a59c5c9b8a7f6e19ca542a486ec2adab21
+skill	tilelang-pass-generate	tilelang	bac60c45424faf763177576469b003037fb106d833caedc6ddb7973aec878472
+skill	tilelang-pass-workflow-analyzer	tilelang	6c80edcd7b7e51b2f7e1712ea7c43260ff24e9aa99f8dd741d7bef6b8a6dc400
+skill	tilelang-perf-optimization	tilelang	303f916b7af25e63cfd5180ad2104e0a69165b6db9a0f48844169b1b3adf7f43
+skill	tilelang-programming-model-guide	tilelang	f3e965e1e0817c372d6186194212d829a5326bb0255420fee888ec7d9962b08f
+skill	tilelang-pto-kernel-workflow	xllm-tilelang	39d3549f8d262b1bde63005cb23d2e20ce88df25a63cb8540f47ded072b84260
+skill	tilelang-review	tilelang	458bf4e8f68ea4148fc87952f0d176c28bd9148a2af8efae6f36ece9492a9dc1
+skill	tilelang-submodule-pull	tilelang	97779f7e94e0070c379d37c871a224d5b57a2f00eef181a8aa1583442fdd9994
+skill	tilelang-vector-ascend-ops-migration	agent-skills-dev	277d2dd96c22805b5a01ca9130dbb957e75984f75186ed79d1d806facbde7419
+skill	torch-ascendc-op-extension	cannbot-ops	96c636ba202b105880006ae9bcf17081ec3f0caf91d0f99ae5b0ebf88f65141a
+skill	torch-custom-ops-guide	cannbot-graph	b87b0aa64df28703abdc1a97343fed4e029bef844eb52529a518246c0e01ba91
+skill	torch-npugraph-ex-compile-error-diagnosis	cannbot-graph	a583b82d6a08e2dae750c834ff0cf51474af1665ea306fa71b0f9019454726a0
+skill	torch-npugraph-ex-dfx-triage	cannbot-graph	f85b65891a3bacae7cbdde1f7e5b733305796ac820ab2a58454a49bdd633cc26
+skill	torch-npugraph-ex-knowledge	cannbot-graph	03794351d9c7b253cd0c22136a609755a1a0d65030ccff94d573431c98b63480
+skill	torch-npugraph-ex-runtime-error-diagnosis	cannbot-graph	dc90a9eede503817c1efb77b16c0bd0c1b42a63bfec0710a682d402f4c4990a9
+skill	torch-npugraph-ex-template	cannbot-graph	86c12681983895f6b798fd49ecd47a1d3ac5323f3fe9e672600ce62a92e5060f
+skill	tuning	msmodelslim	34f32610f9ae087d1949ad3c3df0371124f31fe1b937d9dbdda3f443c1a8dfac
+skill	vllm-ascend-deploy	agent-skills-host	08aece862036fc01c8414f3e5c8b2917f50cb6a7e6d87a5eaa8eba7db524a67b
+skill	vllm-ascend-model-adapter	vllm-ascend	5daa57b7435d70a279181b534a116bbeca730d263e28ca5ae1a6ce870580cda2
+skill	vllm-ascend-release	vllm-ascend	de52c5cdefe3197ec299aed5912c6a49db20b272bbd544b4a59f1d611bcd334e
+skill	xllm-experiment-lifecycle	xllm-ops	c5a3a113bc76e44737ba02645003f0c671e83ffecee3ea20ad874776a6afd67b
+skill	xllm-npu-accuracy-debug	xllm-ops	212b2b6df9856aec00a34767662939aaff63c6bba311a22a31c6109441fb2f56
+skill	xllm-npu-batch-perf	xllm-ops	cdaf1b8a50b62b02bc920419cce5acb7c8d6f27eee30334291d6e48424e7bcf8
+skill	xllm-npu-benchmark	xllm-ops	43688a11c44dc9fd9413986840e8e8bf0bae11f7e7a2990a8ba87b02208976dd
+skill	xllm-npu-build-gate	xllm-ops	ae7c8a87182786adf14f548a20c095f990d858f15836711c3fcbfb10fb04d7bc
+skill	xllm-npu-capacity-planner	xllm-ops	53ed798c09c2d5479f71a031a0c0de9701ee7f2bad8920797c5faf4dc75ec51c
+skill	xllm-npu-code-review	xllm-ops	6b8bd943d1fd5383832c017052b55826fc4e072c9a14c7fba736289e3ab000e7
+skill	xllm-npu-compute-simulation	xllm-ops	7ff93ac260bd3cba012698c7d0ee69c1d2854a57cf6870a5c2655de9f6410375
+skill	xllm-npu-incident-triage	xllm-ops	6d1a72563f81a0e82d05ba7d9d4a06f9c39a2b0e00e42c951609157eff482fbc
+skill	xllm-npu-pipeline-analysis	xllm-ops	d2e3162e0519781cb01c71b6a0d4263f3982f6a8317d58f32ab93689b2eb5ba2
+skill	xllm-npu-profiler	xllm-ops	c6dec8ab4a853d264725cc0c5477cdb3f0af79f6bca29ba303ff560af1a77f1b
+skill	xllm-npu-report-writer	xllm-ops	41d1eabdc48d1b133ac7859acca68e0791561f0aa295fd100e98e52dd6ab9666
+skill	xllm-npu-server-manager	xllm-ops	47110cd85219f5c1816e584ddc5999afe1470e3abe46c6a8a7c30fef5884e1bf
+skill	xllm-npu-sota-loop	xllm-ops	58cea59608aeef6688c6007e325c287a4e2d15b329ab5f571cc62c2f12d36ed2
+skill	xllm-npu-xllm-ops-integration	xllm-ops	c0a95dcfcc07c751d1b83fd75bdb88a5ad65674fd015a18bd4ed01b39084c04c

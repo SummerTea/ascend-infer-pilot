@@ -108,8 +108,9 @@ bash scripts/sync_ascend_skills.sh --verify         # 自检（CI 可用；漂�
 
 跨源同名技能（如 cannbot 镜像版 vs 官方 `tilelang` 仓版）按实况分流，**仍是单层目录**：
 
-- **近似相同**（体积差 ≤10% 且改动行 ≤5%）→ **去重**，保留权威源（先到先得）。实例：`tilelang-review`（cannbot 版与官方版差 ≈1.6%）→ 只留官方 `tilelang` 版。
+- **近似相同**（体积差 ≤10% 且改动行 ≤5%）→ **去重**，保留权威源（先到先得）。实例：`tilelang-review`（cannbot 版与官方版体积差 1.1%、改动行占比 2.8%）→ 只留官方 `tilelang` 版。
 - **实质不同** → **改名并存** `<origin>--<name>`（frontmatter `name` 同步改写，仍是单层目录）。
+- **判定边界**：近似判定**只比较 `SKILL.md`**（体积差 ≤10% 且改动行 ≤5%）；`references/`、`scripts/`、`templates/` 的差异**不计入**——因此近似相同被去重时，异源版本的非正文附件会一并丢弃。
 
 当前改名并存 3 个（都是 cannbot 镜像版与官方 `tilelang` 仓版本**实质不同**时并存的结果；优先用官方版）：
 
@@ -132,10 +133,10 @@ bash scripts/sync_ascend_skills.sh --verify         # 自检（CI 可用；漂�
 
 ## 已知边界
 
-- **跨目录共享资产（`reference/`、`scripts/`、`rules/`）不随技能平铺**：12 个 `xllm-npu-*` 与
-  2 个 `atb-*` 技能引用仓级资产（如 `../../reference/io_specs/*`、`../../scripts/*.py`、
-  `../../rules/*`），平铺后 `../../` 指向 `.agents/`、目标不存在。需要这些资产的技能
-  （`xllm-npu-*`、`atb-*`）应在该仓的源码目录内运行（先
+- **跨目录共享资产（`reference/`、`scripts/`、`rules/`）不随技能平铺**：`xllm-ops` 共 15 个
+  （14 个 `xllm-npu-*` + `xllm-experiment-lifecycle`）、多数 `atb-*` 技能引用仓级资产
+  （如 `../../reference/io_specs/*`、`../../scripts/*.py`、`../../rules/*`），平铺后 `../../`
+  指向 `.agents/`、目标不存在。需要这些资产的技能应在该仓的源码目录内运行（先
   `bash scripts/manage_repos.sh clone <repo> --scenario <id>`）。
 
 ## 相关链接

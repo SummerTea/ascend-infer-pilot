@@ -141,7 +141,7 @@
 | vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
 | 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
 
-**第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §2 来源仓昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
+**第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径，同步时仅归一化 frontmatter `name` 为目录名、正文不改；同名近似版本会被去重、实质不同则改名并存，见 `.agents/skills/README.md`），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §2 来源仓昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
 - **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；入库仅 5 个 + README（白名单见 `.gitignore`），其余 190 个同步而来、不入库（共 195 个技能目录）。
 - **算子开发路线强制**：`AscendC` > `TileLang` > `PyPTO`/`CATLASS`；**Triton / Triton-Ascend 不在实现路线**（脚本 denylist 排除）。
@@ -152,7 +152,7 @@
 | 脚本 | 关键子命令 | 用途 |
 | :--- | :--- | :--- |
 | [manage_repos.sh](scripts/manage_repos.sh) | `--list [--scenario <id>]` / `clone [--targets\|--refs\|<name>\|URL] [--scenario <id>]` / `status [--scenario <id>]` / `export-patch <repo> --scenario <id>` | 目标源码（`workspace/<scenario-id>/source/`）与参考底座（`repos/refs/`）的克隆、巡检与补丁归档 |
-| [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` / `--prune` / `--report <path>` / `--update-lock` / `--verify` / `--pinned` | 按 **13 仓 / 21 条 allowlist** 平铺同步（不入库；Triton 一律排除）；`--prune` 清陈旧；`--update-lock` 写 `scripts/skills.lock`；`--verify` 检漂移 |
+| [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` / `--force` / `--prune` / `--report <path>` / `--update-lock` / `--verify` / `--pinned` | 按 **13 仓 / 21 条 allowlist** 平铺同步（不入库；Triton 一律排除）；`--prune` 清陈旧；`--update-lock` 写 `scripts/skills.lock`；`--verify` 检漂移 |
 
 > 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），与台账 `iterations/it-NNN.md` 互为素材。
 
