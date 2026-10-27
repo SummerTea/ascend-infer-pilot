@@ -213,7 +213,7 @@ flowchart TD
     Step2 --"不能"--> Step3{"【阶梯 3：Out-of-tree 插件扩展】<br/>能否通过插件隔离集成？"}
     Step3 --"能"--> Done3["编写独立插件/注册机制并接入 workspace/<scenario-id>/optimized/plugins/"]
     Step3 --"不能"--> Step4{"【阶梯 4：专用 Kernel 移植与开发】<br/>该结构/精度是否确无生态现成实现？"}
-    Step4 --"能"--> Done4["AscendC / Triton-Ascend / TileLang-Ascend / CATLASS 编写 Kernel → workspace/<scenario-id>/optimized/kernels/"]
+    Step4 --"能"--> Done4["AscendC / TileLang-Ascend / CATLASS 编写 Kernel（Triton-Ascend 仅了解/排错，不作实现路线） → workspace/<scenario-id>/optimized/kernels/"]
     Step4 --"不能"--> Step5["【阶梯 5：底层引擎内核重写与 Fork】<br/>重构调度状态机、内存分配与核心执行流 → workspace/<scenario-id>/source/<engine>/"]
     Done4 -. "方案失败 → 回退上一阶梯" .-> Step3
     Step5 -. "收益不抵维护成本 → 回退上一阶梯" .-> Step4
@@ -234,7 +234,7 @@ flowchart TD
 | **阶梯 1：配置与编排调优** | 算法与算子均成熟，瓶颈来自参数不匹配或拓扑规划失误 | 调 TP/EP 规模、`max_num_batched_tokens` / `max_num_seqs`、KV dtype（BF16/FP8）、chunked prefill、`npugraph_ex` / TorchAir 图捕获分桶 | 极低（小时级） | 零 |
 | **阶梯 2：已有成熟后端切换** | 引擎内置多种后端，默认后端非当前硬件最优 | 切换 Attention 后端（FIA / ATB 融合算子 / ACLNN 单算子）、切换量化解码路径（ATB 低比特 / msmodelslim 导出权重的加载路径） | 低（天级） | 极低 |
 | **阶梯 3：Out-of-tree 插件扩展** | 需支持新量化格式、外部记忆表或非标模型结构，引擎支持插件 | vllm-ascend / vLLM 的 `register_quantization_config`、`register_model`、`register_backend`；`workspace/<scenario-id>/optimized/plugins/` 独立解耦包 | 中（数天） | 低（不破坏引擎主干升级能力） |
-| **阶梯 4：专用 Kernel 移植与开发** | 全新结构（非标头维 MLA、长线性注意力）、或目标代际缺失原生指令 | AscendC / Triton-Ascend / PyPTO / TileLang-Ascend / CATLASS 编写 Fused 算子（RoPE/KV write/QK Norm/MoE GMM/MLA absorb）；前沿 Kernel 向 A2A3 / A5 移植；落 `workspace/<scenario-id>/optimized/kernels/` | 高（1~2 周） | 中（精度与多代际分支持续维护） |
+| **阶梯 4：专用 Kernel 移植与开发** | 全新结构（非标头维 MLA、长线性注意力）、或目标代际缺失原生指令 | AscendC / PyPTO / TileLang-Ascend / CATLASS 编写 Fused 算子（Triton-Ascend 仅了解/排错，不作实现路线；RoPE/KV write/QK Norm/MoE GMM/MLA absorb）；前沿 Kernel 向 A2A3 / A5 移植；落 `workspace/<scenario-id>/optimized/kernels/` | 高（1~2 周） | 中（精度与多代际分支持续维护） |
 | **阶梯 5：底层引擎内核重写与 Fork** | 引擎控制面延迟过高（Python 瓶颈无法根除）、或调度模型与架构不兼容 | 调度状态机下沉、重写内存管理与 HCCL 通信流；必须改引擎时落 `workspace/<scenario-id>/source/<engine>/` 并走 `export-patch` 导出 | 极高（月级） | 极高（脱离社区主干，背负沉重包袱） |
 
 **回退规则**：阶梯是「尝试顺序」而非「单向阶梯」。阶梯 4/5 尝试失败后必须回退到上一阶梯（并在 `workspace/<scenario-id>/ledger/`（台账）留痕），不得因已投入成本继续加码。
@@ -255,7 +255,7 @@ flowchart TD
 
 ---
 
-## 阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）
+## 阶梯 4 实操：算子开发与审查（AscendC / TileLang / CATLASS；Triton-Ascend 仅了解/排错）
 
 针对 J4 阶梯 4「专用 Kernel 移植与开发」的算子实现、审查与交付。动手前必读 [AGENTS.md](../AGENTS.md) §5 五不准红线与 [任务书模板](../templates/task-spec-template.md)（两阶段交付、方案评审先行）。参考实现一律读 `repos/refs/<repo>/`（只读），交付落 `workspace/<scenario-id>/optimized/kernels/`；**环境与配套版本事实见场景台账 00-probe.md 的机器档案段**（本机 CANN / torch_npu / 驱动版本）。
 
@@ -276,11 +276,11 @@ flowchart TD
 | 候选 | 适用 | 要点 |
 | :--- | :--- | :--- |
 | **AscendC** | 底层算子、达芬奇 Cube/Vector 异构模型 | 双缓冲流水、`__ubuf__` 组织、精度与边界显式控制 |
-| **Triton-Ascend** | 从 Triton 迁移/快速原型 | **`num_warps` / `num_stages` 在昇腾不可用**（无对应语义，误设不生效或报错）；核类型须匹配 |
+| **Triton-Ascend** | **不在实现路线**；仅用于读已有 Triton 代码 / 排错 | **`num_warps` / `num_stages` 在昇腾不可用**（无对应语义，误设不生效或报错）；核类型须匹配 |
 | **TileLang-Ascend** | 高级 Tile 编程、编译器 Pass 直达 | 仓库分支 `ascendc_pto`（`workspace/<scenario-id>/source/tilelang-ascend/`）；`tilelang-perf-optimization` 强制 `msprof op` 度量 |
 | **CATLASS** | 矩阵乘模板库 | **非 CUTLASS 移植**（达芬奇 Cube/Vector 异构模型不同） |
 
-**完成标准**：选定一种并给出理由（结构匹配/生态成熟度/维护成本），在任务书中声明落点。
+**完成标准**：选定一种并给出理由（结构匹配/生态成熟度/维护成本），在任务书中声明落点；**不得选 Triton-Ascend 作为实现方案**。
 
 ### 4. 编码与 P0-P2 自查
 

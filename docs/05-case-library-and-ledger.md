@@ -192,7 +192,7 @@
 ### 4.1 落点规范（由原 `src/README.md` 迁入）
 
 - **`workspace/<scenario-id>/optimized/plugins/<engine>/<plugin_name>/`** —— 阶梯 3：out-of-tree 插件。基于 `vllm_ascend` / `vllm` 的 entry_points 机制外挂（新模型注册、自定义 QuantizationConfig、自定义 AttentionBackend）；插件须可独立安装 / 导入，**不得要求修改引擎源码**。
-- **`workspace/<scenario-id>/optimized/kernels/<op_name>/`** —— 阶梯 4：独立算子工程（Triton-Ascend / AscendC / TileLang / PyPTO）。**每算子子目录强制包含**：实现文件（kernel 源码）+ `test_op.py`（单测，正确性校验）+ `benchmark_op.py`（`msprof op` 微基准）。
+- **`workspace/<scenario-id>/optimized/kernels/<op_name>/`** —— 阶梯 4：独立算子工程（AscendC / TileLang / PyPTO；Triton-Ascend 仅了解/排错，不作实现路线）。**每算子子目录强制包含**：实现文件（kernel 源码）+ `test_op.py`（单测，正确性校验）+ `benchmark_op.py`（`msprof op` 微基准）。
 - **`workspace/<scenario-id>/optimized/tools/<tool_name>/`** —— 辅助工具：Golden logits 采集脚本、权重 `ND ↔ NZ` 离线重排（Repack）脚本、msprof 解析辅助工具。
 
 **交付物落点军规**：

@@ -125,9 +125,9 @@ msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
 | 引擎 | 生态位 | 昇腾适配现状 | 主要挂载手段 | 技能支撑 |
 | :--- | :--- | :--- | :--- | :--- |
-| **vllm-ascend** | vLLM 昇腾官方硬件插件宿主 | 官方维护，主力引擎 | 注册表（model/attention/quant）+ entry_points 插件 + torch_npu 融合算子 | `vllm-ascend-model-adapter` / `vllm-ascend-deploy`（含 950DT 镜像 tag）/ `vllm-ascend-developer` |
+| **vllm-ascend** | vLLM 昇腾官方硬件插件宿主 | 官方维护，主力引擎 | 注册表（model/attention/quant）+ entry_points 插件 + torch_npu 融合算子 | `vllm-ascend-model-adapter` / `vllm-ascend-release` / `vllm-ascend-deploy`（含 950DT 镜像 tag） |
 | **MindIE-LLM / Motor / Turbo** | 昇腾原生引擎 + 编排 + 通用加速 | 华为官方；Motor 23 技能覆盖 PD 分离全生命周期 | ATB/ACLNN 算子、Motor 服务化、Turbo 加速层 | `MindIE-Motor` 技能族（deploy/diagnosis/validation） |
-| **xLLM** | OpenAtom 高性能推理引擎（TileLang 深度集成） | xLLM 专用技能仓 22 个 | TileLang-Ascend kernel、xllm-npu-profiler 五表输出 | `tilelang-ascend-kernel` / `xllm-npu-profiler` |
+| **xLLM** | OpenAtom 高性能推理引擎（TileLang 深度集成） | xllm-workflow 源同步 16 个（xllm-ops 15 / xllm-tilelang 1） | TileLang-Ascend kernel、xllm-npu-profiler 五表输出 | `tilelang-op-*`（官方 TileLang 全栈）/ `xllm-npu-*` |
 | **SGLang-Ascend** | 高吞吐 + 前缀缓存标杆 | NPU 专项技能几乎空白（仅社区 3-skill 小仓） | LMCache 存储后端、PD 解耦 hook | 用 vllm-ascend 技能替代；方法论从 SGLang 主仓技能取 |
 
 ---

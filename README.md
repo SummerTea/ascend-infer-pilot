@@ -24,7 +24,7 @@
 
 > 前置：核对**当前场景台账** `workspace/<scenario-id>/ledger/00-probe.md` 的机器档案段（不入库）；缺失或换机/换版本时按 [AGENTS.md §9](AGENTS.md) 探针命令重跑并写入台账。
 
-1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（按 **13 仓 / 21 条 allowlist** 拉取 SKILL.md，**平铺**到 `.agents/skills/`，不入库）。
+1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（按 **13 仓 / 21 条 allowlist** 拉取 SKILL.md，**平铺**到 `.agents/skills/`，不入库）。升级/清理用 `--prune` + `--update-lock`（见 [.agents/skills/README.md](.agents/skills/README.md) 日常更新流程）。
 2. **克隆目标源码 + 建台账**：`scripts/manage_repos.sh clone --targets --scenario <id> && scripts/manage_repos.sh clone --refs`（按 [repos/manifest.yaml](repos/manifest.yaml) 浅克隆：targets 落到 `workspace/<scenario-id>/source/`，refs 落到 `repos/refs/`）；随后按 [docs/05 §3](docs/05-case-library-and-ledger.md) 建场景台账 9 项（`workspace/<scenario-id>/ledger/`，起点 `00-probe.md`；随后 **J0 定焦** `01-triage.md`）。
 3. **读方法论**：先读 [docs/06-bottleneck-triage.md](docs/06-bottleneck-triage.md)（**J0 定焦**：三环漏斗先收窄成一个瓶颈/约束点，冻结目标前必过）再读 [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md)（J0→J6 主线），诊断类任务加读 [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md)。
 4. **用模板派发**：用 [任务书模板](templates/task-spec-template.md) 写任务书（必填源码落点与参考路径）；实验记录与校准台账用 [PMR](templates/pmr-log-template.md)、[校准台账](templates/calibration-template.md) 两个模板。
@@ -54,7 +54,7 @@
 | `workspace/` | **工作区（不入库）**：`<scenario-id>/`（一个优化场景一份：`source/` / `optimized/` / `ledger/`）+ `_shared/calibration.md` | 每场景一份、自包含、并发安全 |
 | [scripts/](scripts/) | `manage_repos.sh` / `sync_ascend_skills.sh` | 源码与技能管理 |
 | [cases/](cases/) | **案例库（入库）**：条目 `cases/<entry-id>.md` + 索引 `cases/index.md` | 条目可被多场景引用；过程台账在 `workspace/<scenario-id>/ledger/` |
-| [.agents/skills/](.agents/skills/) | **第三方技能（平铺）**：5 个随仓库跟踪（白名单见 [.gitignore](.gitignore)）+ 约 172 个同步而来、不入库 | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
+| [.agents/skills/](.agents/skills/) | **第三方技能（平铺）**：5 个随仓库跟踪（白名单见 [.gitignore](.gitignore)）+ 190 个同步而来（共 195 个技能目录）、不入库 | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
 
 ## 源码仓挂载（manage_repos.sh）
 
@@ -69,7 +69,7 @@
 
 `scripts/sync_ascend_skills.sh --category all` 按 **13 仓 / 21 条 allowlist**（开发 10 / 运维 9 / 门禁 2）发现并同步 SKILL.md 技能，**平铺**到 `.agents/skills/<skill-name>/`（不入库）。
 
-- `.agents/skills/` 平铺落点不入库（白名单见 [.gitignore](.gitignore)）：**5 个技能随仓库跟踪**，其余约 172 个同步而来、每次同步重新生成。
+- `.agents/skills/` 平铺落点不入库（白名单见 [.gitignore](.gitignore)）：**5 个技能随仓库跟踪**，其余 190 个同步而来、每次同步重新生成（共 195 个技能目录）。
 - `--list` 离线查看源表（url/branch 已联网核验，勿改分支）；`--only <origin>` 定向重同步。
 
 ## 文档导航
@@ -79,7 +79,7 @@
 | [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md) | J0→J6 方法论主文：阶段路由、双约束账本、五阶梯决策、五不准红线、双轨门禁 |
 | [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md) | 昇腾四瓶颈诊断 SOP：msprof 采集、归因阈值、火焰图 / 五表证据 |
 | [docs/03-ascend-hardware-and-engines.md](docs/03-ascend-hardware-and-engines.md) | 昇腾硬件代际物理规格（910B vs 950）与引擎扩展挂载点 |
-| [docs/04-skill-catalog-and-maintenance.md](docs/04-skill-catalog-and-maintenance.md) | 技能全景、NVIDIA↔昇腾工具对照、第三方技能昇腾相关性评估与维护计划（换版本复测触发） |
+| [docs/04-skill-catalog-and-maintenance.md](docs/04-skill-catalog-and-maintenance.md) | 技能全景、NVIDIA↔昇腾工具对照、来源仓昇腾相关性评估与维护计划（换版本复测触发） |
 | [docs/05-case-library-and-ledger.md](docs/05-case-library-and-ledger.md) | 场景/条目两层定义 + 台账与工作区规范 |
 | [docs/06-bottleneck-triage.md](docs/06-bottleneck-triage.md) | J0 定焦 SOP：三环漏斗、硬出口四条件、熔断升级 |
 | [gates/README.md](gates/README.md) | 门禁所有权 + 数值语义容差表（L1 / L2 / L3 / 探索态-验收态） |
@@ -87,4 +87,4 @@
 | [templates/pmr-log-template.md](templates/pmr-log-template.md) | Predict / Measure / Review 三段式实验日志（msprof 证据） |
 | [templates/calibration-template.md](templates/calibration-template.md) | NPU 硬件基线校准台账（环境冻结 / 代际对照 / 复测触发） |
 
-> docs 新增实操章节：docs/01 §阶梯 4 实操：算子开发与审查、§J6 实操：量化与门禁；docs/02 §msprof 采集与归因实操、§HCCL 与通信排障实操；docs/03 §CUDA→torch_npu 迁移与图模式修复、§vllm-ascend 接入与融合算子替换；docs/04 §第三方技能昇腾相关性评估。取用路由见 [AGENTS.md §7](AGENTS.md)。
+> docs 新增实操章节：docs/01 §阶梯 4 实操：算子开发与审查、§J6 实操：量化与门禁；docs/02 §msprof 采集与归因实操、§HCCL 与通信排障实操；docs/03 §CUDA→torch_npu 迁移与图模式修复、§vllm-ascend 接入与融合算子替换；docs/04 §2 来源仓昇腾相关性评估。取用路由见 [AGENTS.md §7](AGENTS.md)。

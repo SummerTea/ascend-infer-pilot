@@ -9,6 +9,7 @@
 - **随仓库跟踪**（白名单见 `.gitignore`）：下方 5 个技能 + 本 README。
 - **同步而来、不入库**：`scripts/sync_ascend_skills.sh` 拉取的第三方昇腾技能，
   **平铺**落到本目录（不再按域分子目录），被 `.gitignore` 忽略，每次同步重新生成。
+  P11g 实况：**190 个同步技能 / 共 195 个技能目录**（5 入库 + 190 同步）。
 
 ## 入库技能清单（5 个）
 
@@ -44,6 +45,19 @@ bash scripts/sync_ascend_skills.sh --dry-run       # 试跑不落盘
 同步结果**平铺**到本目录、入 gitignore。当前源清单：**13 仓 / 21 条 allowlist**
 （开发 10 / 运维 9 / 门禁 2；以 `--list` 实际输出为准，勿编造 commit）。
 
+## 日常更新流程
+
+```bash
+bash scripts/sync_ascend_skills.sh --dry-run        # 预演：新增/刷新/改名 + prune 候选
+bash scripts/sync_ascend_skills.sh                  # 更新（新装 / 刷新 / 同名分流）
+bash scripts/sync_ascend_skills.sh --prune          # 清理已失效的旧技能目录
+bash scripts/sync_ascend_skills.sh --update-lock    # 记录本次上游 commit → scripts/skills.lock
+bash scripts/sync_ascend_skills.sh --verify         # 自检（CI 可用；漂移 exit 1）
+```
+
+- `--prune` 仅与 `--category all` 一起用（与 `--only` 互斥报错）。
+- `scripts/skills.lock` **入库**，升级时可 `git diff scripts/skills.lock` 审阅上游变更。
+
 ## 筛选原则
 
 - 实现路线优先级：**AscendC > TileLang > PyPTO/CATLASS**。
@@ -59,16 +73,16 @@ bash scripts/sync_ascend_skills.sh --dry-run       # 试跑不落盘
 |---|---|---|
 | J0 定焦 / 性能定位 | `ascend-profiling-anomaly`、`ascend-msprof-analyze-cli`、`msot-msopprof-operator-profiler`、`ascend-schedule-analysis`、`ascend-computation-analysis`、`ascend-communication-analysis`、`memory-analysis`、`ascend-profiler-db-explorer`、`ops-profiling`、`op-mfu-profiler` | `ascend-profiler-data-validation`、`msagent-profiler-breakdown`、`mindstudio-cpu-binding`、`ascend-npu-snapshot-analyzer`、`ascend-profiler-collect-adaption` |
 | J1/J1.5 模型接入 | `model-infer-migrator`、`model-infer-parallel-analysis`、`npu-adapter-reviewer`、`npu-api-adaptation-checker` | `model-infer-parallel-impl`、`atb-aclnn-operator-migration` |
-| J2 账本 | `op-mfu-calculator`、`xllm-npu-capacity-planner`、`xllm-npu-compute-simulation` | — |
+| J2 账本 | `op-mfu-calculator` | `xllm-npu-capacity-planner`、`xllm-npu-compute-simulation`（依赖仓级资产，须在源码目录内运行，见「已知边界」） |
 | J3 归因 | `ascend-schedule-analysis`、`ascend-computation-analysis`、`ascend-communication-analysis`、`hccl-test`、`ascend-cluster-fast-slow-rank-detector`、`ascend-prof-compare` | `ascend-cluster-compare`、`msagent-profiler-breakdown` |
 | J4/J5 算子（**AscendC 优先**） | `ascendc-operator-dev`（端到端编排）、`ascendc-operator-design`、`ascendc-operator-code-gen`、`ascendc-operator-compile-debug`、`ascendc-operator-precision-eval`、`ascendc-precision-debug`、`ascendc-tiling-design`、`ascendc-api-best-practices`、`ascendc-operator-mssanitizer`、`mssanitizer-basic-usage`、`msdebug-basic-usage`、`ascendc-operator-A5-migration`、`ascendc-env-check`、`ascendc-direct-invoke-template`、`torch-ascendc-op-extension`、`aiss-tiling-solver` | `ascendc-code-review`、`ascendc-{blaze,regbase}-best-practice`、`ascendc-{crash,runtime}-debug`、`ascendc-docs-search`、`ascendc-operator-{performance-eval,project-init,testcase-gen,st-gen,doc-gen}`、`ops-precision-standard`、`ops-performance-tuning`、`catlass-operator-*`、`pypto-*` |
-| J4/J5 算子（**TileLang**） | `tilelang-op-design`、`tilelang-op-develop`、`tilelang-op-test-design`、`tilelang-perf-optimization`、`tilelang-pass-{analyzer,design,generate,workflow-analyzer}`、`tilelang-ascend-tile-api`、`tilelang-pto-kernel-workflow`、`tilelang-a5-sim-convert`、`testing-pto-kernels` | `tilelang-custom-skill/*` |
-| J4/J5 模型级优化 | `model-infer-fusion`、`model-infer-kvcache`、`model-infer-graph-mode`、`model-infer-multi-stream`、`model-infer-prefetch`、`model-infer-superkernel`、`model-infer-runtime-debug`、`model-infer-precision-debug` | `ascend-fusion-op-replace` |
+| J4/J5 算子（**TileLang**） | `tilelang-op-design`、`tilelang-op-develop`、`tilelang-op-test-design`、`tilelang-perf-optimization`、`tilelang-pass-{analyzer,design,generate,workflow-analyzer}`、`tilelang-ascend-tile-api`、`tilelang-pto-kernel-workflow`、`tilelang-a5-sim-convert`、`testing-pto-kernels`、`tilelang-op-developer` | `tilelang-api-best-practices`、`tilelang-programming-model-guide`、`tilelang-env-check`、`tilelang-error-fixer`、`tilelang-debug-helper`、`tilelang-review`、`tilelang-github-operations`、`tilelang-submodule-pull`（`tilelang-*` 同名以官方 `tilelang` 仓为准） |
+| J4/J5 模型级优化 | `model-infer-fusion`、`model-infer-kvcache`、`model-infer-graph-mode`、`model-infer-multi-stream`、`model-infer-prefetch`、`model-infer-superkernel`、`model-infer-runtime-debug`、`model-infer-precision-debug`、`tilelang-vector-ascend-ops-migration` | `ascend-fusion-op-replace` |
 | J4/J5 图模式 | `torch-npugraph-ex-knowledge`、`torch-npugraph-ex-template`、`torch-npugraph-ex-compile-error-diagnosis`、`torch-npugraph-ex-runtime-error-diagnosis`、`torch-npugraph-ex-dfx-triage`、`torch-custom-ops-guide` | — |
-| J6 门禁 | `accuracy-gate`、`perf-gate`、`evalscope`、`kl-consistency-test`、`quantization-dev`、`quantization`、`tuning`、`sensitive-layer-analysis` | — |
+| J6 门禁 | `accuracy-gate`、`perf-gate`、`evalscope`、`kl-consistency-test`、`quantization-dev`、`quantization`、`tuning`、`sensitive-layer-analysis`、`compare-result-analyzer`、`deterministic-calculation-analysis`、`precision-debugger`（整网精度 / 确定性 / 精度调试） | — |
 | 通信 / 解耦 | `hccl-test`、`deepep-to-cam-converter`、`ascend-communication-analysis` | `ascend-moe-optimizer-trace-analyzer`、`ascend-moe-optimizer-auto-trace` |
 | 服务化（MindIE-Motor） | `motor-deploy`、`motor-diagnosis`、`motor-validation` | `motor-{dev,reliability,scale,smoke-suite}` + 其 `motor-deploy-*`/`motor-diagnosis-*`/`motor-validation-*` 原子子技能 |
-| 引擎接入 | `vllm-ascend-model-adapter`、`sglang-npu-adapter` | `vllm-ascend-release`、`xllm-npu-*`(14) |
+| 引擎接入 | `vllm-ascend-model-adapter`、`vllm-ascend-deploy`、`sglang-npu-adapter` | `vllm-ascend-release`、`xllm-npu-*`(15) |
 | 主机 / 环境 | `npu-smi`、`ascend-docker`、`cann-operator-env-config`、`npu-arch`、`atc-model-converter` | — |
 
 ## 重复对的优先选用表
@@ -79,16 +93,33 @@ bash scripts/sync_ascend_skills.sh --dry-run       # 试跑不落盘
 |---|---|---|
 | 算子代码审查 | `ascendc-code-review` | `ascendc-operator-code-review` 已删（内容为前者子集） |
 | 算子文档 | `ascendc-operator-doc-gen` | `ascendc-operator-doc-writer` 已删 |
-| TileLang kernel 开发 | `tilelang-op-develop` | `tilelang-ascend-kernel` 已删（其唯一增量是 Triton→TileLang 映射，本工程不用 Triton） |
+| TileLang kernel 开发 | `tilelang-op-develop` | `tilelang-ascend-kernel` 已删（xLLM 绑定过深、工程当前不做 xLLM TileLang 定制；如需恢复须在源表新增 `xLLM-AI/xllm` 行） |
 | 算子精度调试 | `ascendc-precision-debug`（前置纪律）+ `ascendc-operator-precision-debug`（误差分析→三层代码审查） | 两份是**两段**，按序使用 |
 | sanitizer | `ascendc-operator-mssanitizer`（选检测模式） | `mssanitizer-basic-usage`（工具参数/产物位置） |
 | 算子性能调优 | `ascendc-operator-performance-optim` | `ops-performance-tuning`（通用编排） |
 | 融合算子替换 | `model-infer-fusion`（含参考实现匹配） | `ascend-fusion-op-replace`（全局替换规范） |
 | profiling 采集 | `profiling-collect`（含三方框架补丁法/集合通信采集） | `ascend-profiler-collect-adaption` |
 | profiling 分析 | `msagent-profiler-breakdown`（通用） | `profiling-analyze` 已删（DiT/VAE 扩散专用） |
-| 评测执行 | vendored `evalscope` + `accuracy-gate`/`perf-gate` | `xllm-npu-*-runner` 已删（evalscope 薄封装） |
+| 评测执行 | vendored `evalscope` + `accuracy-gate`/`perf-gate` | `xllm-npu-*-runner` 已删（与 `evalscope` + `accuracy-gate`/`perf-gate` 方法重叠，且强绑 xLLM 运行栈；本工程不做 xLLM 定制） |
 | MFU | `op-mfu-calculator`（手算）↔ `op-mfu-profiler`（msprof-analyze 实测） | 互补，估算 vs 实测 |
 | Tiling 设计 | `ascendc-operator-design`（设计流程）↔ `ascendc-tiling-design`（多核/UB/Buffer 专项） | 互补 |
+
+## 同名分流（<origin>--<name>）
+
+跨源同名技能（如 cannbot 镜像版 vs 官方 `tilelang` 仓版）按实况分流，**仍是单层目录**：
+
+- **近似相同**（体积差 ≤10% 且改动行 ≤5%）→ **去重**，保留权威源（先到先得）。实例：`tilelang-review`（cannbot 版与官方版差 ≈1.6%）→ 只留官方 `tilelang` 版。
+- **实质不同** → **改名并存** `<origin>--<name>`（frontmatter `name` 同步改写，仍是单层目录）。
+
+当前改名并存 3 个（都是 cannbot 镜像版与官方 `tilelang` 仓版本**实质不同**时并存的结果；优先用官方版）：
+
+- `cannbot-ops--tilelang-api-best-practices`
+- `cannbot-ops--tilelang-op-design`
+- `cannbot-ops--tilelang-programming-model-guide`
+
+对应原名目录（`tilelang-api-best-practices` / `tilelang-op-design` / `tilelang-review` / `tilelang-programming-model-guide`）保留官方 `tilelang` 仓版本。
+
+**不得用多级目录做命名空间**：Agent Skills 要求 `name` == 目录名且唯一，改名仅在单层平铺内以 `<origin>--<name>` 表达。
 
 ## 算子开发路线（强制）
 
@@ -98,6 +129,14 @@ bash scripts/sync_ascend_skills.sh --dry-run       # 试跑不落盘
   仅供**了解/排错**，不作实现路线。
 - 选型判据一句话：算法结构需要自定义 Tile/流水 → TileLang；需要 AscendC 指令级控制/
   极致性能 → AscendC；需要矩阵乘模板 → CATLASS；PyPTO 仅在既有工程已用 PyPTO 时。
+
+## 已知边界
+
+- **跨目录共享资产（`reference/`、`scripts/`、`rules/`）不随技能平铺**：12 个 `xllm-npu-*` 与
+  2 个 `atb-*` 技能引用仓级资产（如 `../../reference/io_specs/*`、`../../scripts/*.py`、
+  `../../rules/*`），平铺后 `../../` 指向 `.agents/`、目标不存在。需要这些资产的技能
+  （`xllm-npu-*`、`atb-*`）应在该仓的源码目录内运行（先
+  `bash scripts/manage_repos.sh clone <repo> --scenario <id>`）。
 
 ## 相关链接
 

@@ -1,6 +1,6 @@
 # 04 · 技能全景、工具对照与维护计划
 
-> **定位**：技能盘点（自研知识 / 本地白名单 5 / 同步技能 ~172）、来源仓昇腾相关性评估、算子技能选型、NVIDIA↔昇腾工具对照、维护计划与风险表。
+> **定位**：技能盘点（自研知识 / 本地白名单 5 / 同步技能 190 = 共 **195 个技能目录**）、来源仓昇腾相关性评估、算子技能选型、NVIDIA↔昇腾工具对照、维护计划与风险表。
 > **配套**：[流水线与物理账本](01-pipeline-and-ledger.md) ｜ [诊断 SOP](02-ascend-diagnosis-sop.md) ｜ [硬件与引擎](03-ascend-hardware-and-engines.md) ｜ [AGENTS.md](../AGENTS.md)
 > **同步入口**：`bash scripts/sync_ascend_skills.sh --category all`（或 `--category {dev,ops,gate} [--only <origin>]`；`--list` 离线查看权威源表：**13 仓 / 21 条 allowlist**）。
 
@@ -12,10 +12,11 @@
 | :--- | :--- | :--- | :--- |
 | **自研 / 个性化知识** | — | `docs/01~05`（方法论与实操章节） | 是 |
 | **本地白名单技能** | 5 | `.agents/skills/{evalscope,kl-consistency-test,mooncake-api,mooncake-troubleshoot,debug-distributed-hang}/` | 是 |
-| **同步技能（第三方原文）** | ~172 | `.agents/skills/<skill-name>/`（**平铺**，无分类子目录） | **否**（`.gitignore` 白名单制） |
+| **同步技能（第三方原文）** | 190 | `.agents/skills/<skill-name>/`（**平铺**，无分类子目录） | **否**（`.gitignore` 白名单制） |
+| **合计（技能目录）** | **195** | `.agents/skills/`（平铺） | **5 入库 + 190 同步** |
 
 > **白名单 5 技能**：`evalscope`（modelscope/evalscope）、`kl-consistency-test` / `debug-distributed-hang`（sgl-project/sglang）、`mooncake-api` / `mooncake-troubleshoot`（kvcache-ai/Mooncake）——上游原文入库，随根仓库跟踪，不依赖运行时 clone。
-> **同步技能**：由 `scripts/sync_ascend_skills.sh` 从 **13 仓 / 21 条 allowlist**（dev 10 / ops 9 / gate 2）发现并同步，**平铺**落到 `.agents/skills/<name>/`，不入库，每次同步重新生成；当前约 172 个，分 T1 核心（约 85）/ T2 支撑（约 92）。
+> **同步技能**：由 `scripts/sync_ascend_skills.sh` 从 **13 仓 / 21 条 allowlist**（dev 10 / ops 9 / gate 2）发现并同步，**平铺**落到 `.agents/skills/<name>/`，不入库，每次同步重新生成；当前 **190 个**，按来源计数：`cannbot-ops 28` / `mindie-motor 23` / `tilelang 18` / `msagent-profiler 17` / `agent-skills-atb 16` / `xllm-ops 15` / `agent-skills-dev 15` / `cannbot-model 11` / `msagent-operator 8` / `cannbot-graph 6` / `agent-skills-host 6` / `mindie-sd-gate 5` / `agent-skills-catlass 4` / `sglang-npu 3` / `msmodelslim 3` / `god 3` / `fla 3` / `vllm-ascend 2` / `agent-skills-ops 2` / `xllm-tilelang 1` / `pto 1`（合计 190，以 `.agents/skills/.origins/` 实况为准）；分层为 **T1 核心 / T2 支撑** 两档（具体技能见 `.agents/skills/README.md` 路由表，此处不列数字）。
 > **权威指向**：源 url / branch / include 以 `bash scripts/sync_ascend_skills.sh --list` 为**唯一权威**，本文各表仅作索引；不一致以脚本为准。
 
 ---
@@ -27,21 +28,21 @@
 | 来源（仓 / branch） | 提供什么 | 昇腾相关性 | 关键注意 |
 | :--- | :--- | :--- | :--- |
 | **本地白名单 5 技能**（modelscope/evalscope、sgl-project/sglang、kvcache-ai/Mooncake） | `evalscope`（J6 双轨评测，可打 OpenAI 兼容端点）、`kl-consistency-test`（prefill/decode 双路径 logprob KL）、`mooncake-api` / `mooncake-troubleshoot`（KV 传输 API / 部署排障）、`debug-distributed-hang`（分布式卡死排查） | 半相关→昇腾相关（方法通用，可直接用于昇腾端点） | 性能数值须换算 **msprof 设备侧口径**；`cuda-gdb` / CUDA coredump / `NCCL_DEBUG` 需替换为 HCCL / `hccl_test` / `msprof`（`py-spy` 通用仍可用）；RDMA 侧对应 HCCS / RoCE |
-| **Ascend/agent-skills**（master，GitCode 权威） | AscendC 算子开发 14 件套（dev / code-gen / compile-debug / precision-eval / mssanitizer 等）、ATB/ACLNN 迁移调试 16、CATLASS 模板 4、`hccl-test`、`ascend-profiling-anomaly`、`npu-smi`、`ascend-docker`、`cann-operator-env-config`、`atc-model-converter`、`npu-adapter-reviewer` | 昇腾相关（原生） | GitHub 镜像 2026-05 后停更，脚本直连 GitCode；AscendC 编排入口 `ascendc-operator-dev`；`hccl_test` 为通信基线口径（[02 HCCL 实操](02-ascend-diagnosis-sop.md)） |
-| **tile-ai/tilelang-ascend**（ascendc_pto） | TileLang 全栈：`tilelang-op-{design,develop,test-design}`、`tilelang-perf-optimization`、`tilelang-pass-*`（唯一直达编译器 Pass 层）、`tilelang-ascend-tile-api`、`tilelang-a5-sim-convert` | 昇腾相关 | `tilelang-perf-optimization` 强制 `msprof op`（与本工程铁律一致）；分支为 `ascendc_pto` 非 main |
+| **Ascend/agent-skills**（master，GitCode 权威） | AscendC 算子开发 14 件套 + TileLang 迁移（agent-skills-dev 15）、ATB/ACLNN 迁移调试 16（agent-skills-atb）、CATLASS 模板 4（agent-skills-catlass）、主机/环境 6（agent-skills-host，含 `vllm-ascend-deploy`）、HCCL 基线 + profiling 异常 2（agent-skills-ops） | 昇腾相关（原生） | GitHub 镜像 2026-05 后停更，脚本直连 GitCode；AscendC 编排入口 `ascendc-operator-dev`；`hccl_test` 为通信基线口径（[02 HCCL 实操](02-ascend-diagnosis-sop.md)） |
+| **tile-ai/tilelang-ascend**（ascendc_pto，官方 `tilelang` 源） | TileLang 全栈 **18**：`tilelang-op-*`（design / develop / test-design）、`tilelang-perf-optimization`、`tilelang-pass-*`（唯一直达编译器 Pass 层）、`tilelang-ascend-tile-api`、`tilelang-a5-sim-convert` + 8 个 `tilelang-custom-skill/*`（api-best-practices / debug-helper / env-check / error-fixer / github-operations / programming-model-guide / review / submodule-pull）；另有 `tilelang-op-developer`（cannbot-ops）、`tilelang-vector-ascend-ops-migration`（agent-skills-dev） | 昇腾相关 | `tilelang-perf-optimization` 强制 `msprof op`（与本工程铁律一致）；分支为 `ascendc_pto` 非 main；跨源同名**分流**：近似相同（体积差≤10% 且改动行≤5%）→ 去重保留官方 `tilelang` 版；实质不同 → 改名并存 `cannbot-ops--<name>`（见 [.agents/skills/README.md](../.agents/skills/README.md) §同名分流） |
 | **huawei-csl/pto-kernels**（main） | `testing-pto-kernels`——A2A3（910B）/ A5（950）双代算子参考实现与测试 | 昇腾相关 | PyPTO 参考实现，双代差异直接对照；配合 `tilelang-pto-kernel-workflow` 使用 |
-| **xLLM-AI/xllm-workflow**（main） | `xllm-npu-*` 15 件套（benchmark / profiler / incident-triage / capacity-planner / compute-simulation / pipeline-analysis / server-manager / sota-loop / code-review / build-gate / report-writer / accuracy-debug / xllm-ops-integration / batch-perf）+ `tilelang-pto-kernel-workflow` | 昇腾相关 | 绑 OpenAtom xLLM 引擎，用前确认领域；旧 3 个 `xllm-npu-{accuracy,perf,eval}-runner` 已删（T3），以现 15 件套为准 |
-| **ascend-ai-coding/awesome-ascend-skills**（main，cannbot 镜像） | cannbot 镜像：`model-infer-*` 11（kvcache / fusion / multi-stream / prefetch / superkernel / quantization / perf-breakdown / parallel 等）、ops 34（AscendC 最佳实践 / npu-arch 等）、graph 6（npugraph_ex 图模式）、ops-lab/tilelang 5 | 昇腾相关 | **用 GitHub 镜像绕开 GitCode token**；镜像滞后风险——与 GitCode 权威源（cann/cannbot-skills）比对，`--only` 定向重同步；`plugins-*` 迁移中入口会变 |
+| **xLLM-AI/xllm-workflow**（main） | `xllm-npu-*` 15 件套（benchmark / profiler / incident-triage / capacity-planner / compute-simulation / pipeline-analysis / server-manager / sota-loop / code-review / build-gate / report-writer / accuracy-debug / xllm-ops-integration / batch-perf / experiment-lifecycle）+ `tilelang-pto-kernel-workflow` | 昇腾相关 | 绑 OpenAtom xLLM 引擎，用前确认领域；旧 3 个 `xllm-npu-{accuracy,perf,eval}-runner` 已删（T3），以现 15 件套为准 |
+| **ascend-ai-coding/awesome-ascend-skills**（main，cannbot 镜像） | cannbot 镜像：`model-infer-*` 11（fusion / graph-mode / kvcache / migrator / multi-stream / parallel-analysis / parallel-impl / precision-debug / prefetch / runtime-debug / superkernel）、ops 25（AscendC 最佳实践 / PyPTO / npu-arch 等）、graph 6（npugraph_ex 图模式）；`ops-lab/tilelang/*` 已并入实际同步（`tilelang` 源 18 个的构成见上表行） | 昇腾相关 | **用 GitHub 镜像绕开 GitCode token**；镜像滞后风险——与 GitCode 权威源（cann/cannbot-skills）比对，`--only` 定向重同步；`plugins-*` 迁移中入口会变 |
 | **fla-org/flash-linear-attention**（main） | `fla-ascend-performance`、`fla-optimization-loop`、`fla-correctness-coverage`（线性注意力昇腾性能闭环） | 昇腾相关 | 性能结论硬绑定 CANN / torch_npu 版本，换环境必须复测（维护计划 B 类） |
-| **kali20gakki/msAgent**（master，GitCode `Ascend/msagent` 的 GitHub 镜像） | profiler 17（`ascend-prof-compare` / 快慢卡检测 / `ascend-msprof-analyze-cli` / npu-snapshot-analyzer 等）、operator 5（msdebug / mssanitizer / mstx / msot 等） | 昇腾相关 | GitHub 镜像滞后风险（GitCode 权威）；个人维护仓，核心逻辑借鉴勿强依赖；`ascend-prof-compare` 为唯一 GPU↔NPU 双 Prof 对比 |
+| **kali20gakki/msAgent**（master，GitCode `Ascend/msagent` 的 GitHub 镜像） | profiler 17（`ascend-prof-compare` / 快慢卡检测 / `ascend-msprof-analyze-cli` / npu-snapshot-analyzer 等）、operator 8（msdebug / mssanitizer / mstx / msot / ops 调优 5 + 整网精度 `compare-result-analyzer` / `deterministic-calculation-analysis` / `precision-debugger` 3） | 昇腾相关 | GitHub 镜像滞后风险（GitCode 权威）；个人维护仓，核心逻辑借鉴勿强依赖；`ascend-prof-compare` 为唯一 GPU↔NPU 双 Prof 对比 |
 | **XiaoLuoLYG/GOD**（main） | `deepep-to-cam-converter`（DeepEP→CAM、NCCL→HCCL、CUDA→NPU）+ `ascend-moe-optimizer-{auto-trace,trace-analyzer}` | 昇腾相关 | **该仓 78 个技能里其余是社会仿真，勿全量同步**（allowlist 已收窄）；迁移后必跑 `hccl_test` + `msprof` 验证重叠度 |
 | **Ascend/MindIE-Motor**（master） | `motor-*` 23（deploy / diagnosis / validation / reliability / scale / smoke 等），PD 分离服务全生命周期 | 昇腾相关 | 对标 Dynamo / vLLM-router；部署与诊断均需真机 + msprof 权限 |
 | **vllm-project/vllm-ascend**（main） | `vllm-ascend-model-adapter`（双段门禁：dummy 快步 + 真权重强制）、`vllm-ascend-release`（含 950DT 镜像 tag） | 昇腾相关 | 官方插件仓，挂载点见 [03 §3.1](03-ascend-hardware-and-engines.md) |
 | **LinyuanLi0046/Ascend-SGLang-Skills**（main） | `npu-api-adaptation-checker`、`sglang-npu-adapter`、`test-regression-pr-locator`（SGLang-NPU 适配检查 3） | 昇腾相关 | 社区小仓、NPU 专项几乎空白；方法论从 SGLang 主仓白名单技能（`kl-consistency-test` / `debug-distributed-hang`）取 |
 | **Ascend/msmodelslim**（master，GitCode） | `quantization`、`tuning`、`sensitive-layer-analysis`（量化与 evaluate/tuning 门禁 3） | 昇腾相关 | 目标值 + 容差判定、禁止改评测口径、0 分自愈链；结论硬绑定环境，换 CANN / torch_npu / 芯片必须复测 |
-| **Ascend/MindIE-SD**（dev） | `accuracy-gate`、`perf-gate`、`quantization-dev`、profiling×2（collect / analyze）、`performance-optimization`（L1/L2/L3 与探索态/验收态 6） | 昇腾相关（方法论） | **扩散/多模态仓（非 LLM），领域错配**——只取门禁方法论，执行前确认领域 |
+| **Ascend/MindIE-SD**（dev） | `accuracy-gate`、`perf-gate`、`quantization-dev`、`profiling-collect`、`performance-optimization`（L1/L2/L3 与探索态/验收态 5） | 昇腾相关（方法论） | **扩散/多模态仓（非 LLM），领域错配**——只取门禁方法论，执行前确认领域 |
 
-> **已删除 / 不再使用**（历史遗留，勿再引用）：原 vendored 2 个——`triton-kernel-writing`（纯 `@triton.jit`，本工程不用 Triton）、`kernel-microbenchmark`（CUPTI/CUDA-only，与 msprof 铁律冲突，方法论并入 [02 测量铁律](02-ascend-diagnosis-sop.md) 与本机基线）；T3 12 个——`ascendc-operator-code-review`、`ascendc-operator-doc-writer`、`tilelang-ascend-kernel`（Triton→TileLang 映射，直接用 `tilelang-op-*` 全栈替代）、`xllm-npu-{accuracy,perf,eval}-runner` 3 个（如 `xllm-npu-perf-runner` → 现 `xllm-npu-batch-perf` / `xllm-npu-benchmark`）、`evaluation`、`installation`、`strategy`、`adaptation`、`docs-management`、`profiling-analyze`（旧 T3 版；同名技能现由 MindIE-SD 源同步而来，**同名不同源，用前甄别**）。
+> **已删除 / 不再使用**（历史遗留，勿再引用）：原 vendored 2 个——`triton-kernel-writing`（纯 `@triton.jit`，本工程不用 Triton）、`kernel-microbenchmark`（CUPTI/CUDA-only，与 msprof 铁律冲突，方法论并入 [02 测量铁律](02-ascend-diagnosis-sop.md) 与本机基线）；T3 12 个——`ascendc-operator-code-review`、`ascendc-operator-doc-writer`、`tilelang-ascend-kernel`（xLLM 绑定过深、工程当前不做 xLLM TileLang 定制，用官方 `tilelang` 源 `tilelang-op-*` 全栈替代；**如需恢复须在源表新增 `xLLM-AI/xllm` 行**）、`xllm-npu-{accuracy,perf,eval}-runner` 3 个（如 `xllm-npu-perf-runner` → 现 `xllm-npu-batch-perf` / `xllm-npu-benchmark`）、`evaluation`、`installation`、`strategy`、`adaptation`、`docs-management`、`profiling-analyze`（旧 T3 版；现未同步，勿引用）。
 
 ---
 
@@ -112,7 +113,7 @@
 
 | 类型 | 涉及 | 动作 | 频率 |
 | :--- | :--- | :--- | :--- |
-| **A. 权威源与镜像** | GitCode 权威：`Ascend/agent-skills`（master）、`Ascend/msmodelslim`；GitHub 镜像：cannbot（`awesome-ascend-skills`，绕开 GitCode token）、`msagent`（`kali20gakki/msAgent`） | 同步脚本直连权威源或镜像；**GitHub 镜像有滞后风险**（`Ascend/agent-skills` GitHub 版 2026-05 后停更；cannbot `plugins-*` 迁移中入口会变）；`bash scripts/sync_ascend_skills.sh --category all`（或 `--only <origin>`）按 **13 仓 / 21 条 allowlist** 重同步 | 季度 |
+| **A. 权威源与镜像** | GitCode 权威：`Ascend/agent-skills`（master）、`Ascend/msmodelslim`；GitHub 镜像：cannbot（`awesome-ascend-skills`，绕开 GitCode token）、`msagent`（`kali20gakki/msAgent`） | 同步脚本直连权威源或镜像；**GitHub 镜像有滞后风险**（`Ascend/agent-skills` GitHub 版 2026-05 后停更；cannbot `plugins-*` 迁移中入口会变）；`bash scripts/sync_ascend_skills.sh --category all`（或 `--only <origin>`）按 **13 仓 / 21 条 allowlist** 重同步；**季度更新流程** = `--dry-run` → 同步 → `--prune` → `--update-lock`；上游变更可在 `git diff scripts/skills.lock` 审阅 | 季度 |
 | **B. 环境硬绑定复测（最高风险）** | 量化/性能类技能（`quantization-dev`、`fla-ascend-performance`、tilelang-perf 等均明示「换 CANN/torch_npu/芯片必须复测」） | **每次升级 CANN / torch_npu / 芯片后重跑验证 SOP**；把「已核验到 CANN x.y + torch_npu a.b.c」记入 `workspace/_shared/calibration.md` 台账 | 每次环境升级 |
 | **C. 版本配套表** | CANN ↔ torch_npu ↔ PyTorch ↔ 驱动（HDK） | **严格对应、不可混装**；以 CANN 官方安装文档配套表为准；910B3 基准工具版本见场景台账 00-probe.md 机器档案段 | 每次建环境 |
 | **D. 需自建并长期维护** | ① **950 代际约束**（SIMT / HiF8 / UB Bank 重写 / CCU / msprof 指标差异）；② **本机 msprof 基线**（P_eff / BW_eff 实测 + 锁频命令）；③ **docs/01~05 自研知识章节** | 950 约束与基线写入本工程 `docs/` + `workspace/<scenario-id>/ledger/`（不入库；规范见 [docs/05](05-case-library-and-ledger.md)）；自研知识章节随每次实验迭代 | 持续 |

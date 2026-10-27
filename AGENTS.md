@@ -10,7 +10,7 @@
 | [docs/](docs/) | 方法论主文：J0→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
 | [repos/](repos/) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | J1.5 盘点 / J3 归因 / J4 参考复用 |
 | `workspace/` | **不入库**：`<scenario-id>/`（`source/` + `optimized/` + `ledger/`）+ `_shared/calibration.md` | J4/J5 落点 / J6 过程留痕 |
-| [.agents/skills/](.agents/skills/) | 第三方技能（平铺）：5 个入库 + 约 172 个同步而来（不入库） | 按 §7 技能路由表取用 |
+| [.agents/skills/](.agents/skills/) | 第三方技能（平铺）：5 个入库 + 190 个同步技能 / 共 195 个技能目录（不入库） | 按 §7 技能路由表取用 |
 
 ## 1.0 J0 定焦：先收窄再冻结
 
@@ -133,7 +133,7 @@
 
 | 主题 | 入口 |
 | :--- | :--- |
-| 算子开发与审查 | [docs/01](docs/01-pipeline-and-ledger.md) §`阶梯 4 实操：算子开发与审查（AscendC / Triton-Ascend / TileLang / CATLASS）` |
+| 算子开发与审查 | [docs/01](docs/01-pipeline-and-ledger.md) §`阶梯 4 实操：算子开发与审查（AscendC / TileLang / CATLASS；Triton-Ascend 仅了解/排错）` |
 | 量化与门禁 | [docs/01](docs/01-pipeline-and-ledger.md) §`J6 实操：量化与门禁（msmodelslim + L1/L2/L3 + 探索态/验收态）` |
 | msprof 采集与归因 | [docs/02](docs/02-ascend-diagnosis-sop.md) §`msprof 采集与归因实操（五表 / AICPU / GPU↔NPU 对比）` |
 | HCCL 与通信排障 | [docs/02](docs/02-ascend-diagnosis-sop.md) §`HCCL 与通信排障实操（基线 / 快慢卡 / RoCE / PD 分离）` |
@@ -141,9 +141,9 @@
 | vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
 | 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
 
-**第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §第三方技能昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
+**第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §2 来源仓昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
-- **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；入库仅 5 个 + README（白名单见 `.gitignore`），其余约 172 个同步而来、不入库。
+- **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；入库仅 5 个 + README（白名单见 `.gitignore`），其余 190 个同步而来、不入库（共 195 个技能目录）。
 - **算子开发路线强制**：`AscendC` > `TileLang` > `PyPTO`/`CATLASS`；**Triton / Triton-Ascend 不在实现路线**（脚本 denylist 排除）。
 - **路由细则**（J0→J6 各环节该用哪些技能 + 重复对优先选用）：见 `.agents/skills/README.md`。
 
@@ -152,7 +152,7 @@
 | 脚本 | 关键子命令 | 用途 |
 | :--- | :--- | :--- |
 | [manage_repos.sh](scripts/manage_repos.sh) | `--list [--scenario <id>]` / `clone [--targets\|--refs\|<name>\|URL] [--scenario <id>]` / `status [--scenario <id>]` / `export-patch <repo> --scenario <id>` | 目标源码（`workspace/<scenario-id>/source/`）与参考底座（`repos/refs/`）的克隆、巡检与补丁归档 |
-| [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` | 按 **13 仓 / 21 条 allowlist** 同步 SKILL.md，**平铺**到 `.agents/skills/`（不入库；Triton 一律排除） |
+| [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` / `--prune` / `--report <path>` / `--update-lock` / `--verify` / `--pinned` | 按 **13 仓 / 21 条 allowlist** 平铺同步（不入库；Triton 一律排除）；`--prune` 清陈旧；`--update-lock` 写 `scripts/skills.lock`；`--verify` 检漂移 |
 
 > 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），与台账 `iterations/it-NNN.md` 互为素材。
 
