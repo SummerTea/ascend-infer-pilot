@@ -7,7 +7,9 @@
 
 ## 1. 为什么要回写
 
-流程只有在真机上跑过才知道哪里断。首个真机 J0 闭环（`workspace/1x910B3-qwen3-8b-triage/ledger/01-triage.md §5`）一轮就暴露 6 条：V1 容器可运行性未入齐备性、V2 profiler「假活」无排障指引、V3 R1 阶段占比无法从 timeline 直接读、V4 定位卡缺「负载定义」、V5 证据须申报采集配置、V6 `msprof --application` 已废弃。
+流程只有在真机上跑过才知道哪里断。首个真机 J0 闭环（`workspace/1x910B3-qwen3-8b-triage/ledger/01-triage.md §5`）一轮就暴露 6 条：V1 容器可运行性未入齐备性、V2 profiler「假活」无排障指引、V3 R1 阶段占比无法从 timeline 直接读、V4 定位卡缺「负载定义」、V5 证据须申报采集配置、V6 端到端 `msprof --application` 将被废弃。
+
+**第二轮真机核验（容器 CANN 9.0.0）补三条**：V6 已实测确认——端到端 `msprof` 的 `--application` 在 help 里标注 will be discarded（改用位置参数 `msprof --output=<dir> <app>`，实测可解析），而 `msprof op` 的 `--application` 仍是官方选项、与位置参数均可 → 回写 [docs/02](02-ascend-diagnosis-sop.md)、[docs/06](06-bottleneck-triage.md)、[校准台账](../templates/calibration-template.md)、[PMR 模板](../templates/pmr-log-template.md)。V7 容器内无 `npu-smi`（`command -v npu-smi` 为空）→ 回写 [docs/03 §2](03-ascend-hardware-and-engines.md)。V8 宿主整包缺 `msprof`（`source set_env.sh` 后 `command -v` 仍为空）→ 回写 docs/03 §2 与 [docs/05 §3](05-case-library-and-ledger.md)。
 
 **不回写的两种失败**：
 

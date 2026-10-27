@@ -27,7 +27,7 @@
 1. **同步技能**：`scripts/sync_ascend_skills.sh --category all`（按 **13 仓 / 21 条 allowlist** 拉取 SKILL.md，**平铺**到 `.agents/skills/`，不入库）。升级/清理用 `--prune` + `--update-lock`（见 [.agents/skills/README.md](.agents/skills/README.md) 日常更新流程）。
 2. **克隆目标源码 + 建台账**：`scripts/manage_repos.sh clone --targets --scenario <id> && scripts/manage_repos.sh clone --refs`（按 [repos/manifest.yaml](repos/manifest.yaml) 浅克隆：targets 落到 `workspace/<scenario-id>/source/`，refs 落到 `repos/refs/`）；随后按 [docs/05 §3](docs/05-case-library-and-ledger.md) 建场景台账 9 项（`workspace/<scenario-id>/ledger/`，起点 `00-probe.md`；随后 **J0 定焦** `01-triage.md`）。
 3. **读方法论**：先读 [docs/06-bottleneck-triage.md](docs/06-bottleneck-triage.md)（**J0 定焦**：三环漏斗先收窄成一个瓶颈/约束点，冻结目标前必过）再读 [docs/01-pipeline-and-ledger.md](docs/01-pipeline-and-ledger.md)（J0→J6 主线），诊断类任务加读 [docs/02-ascend-diagnosis-sop.md](docs/02-ascend-diagnosis-sop.md)。
-4. **用模板派发**：用 [任务书模板](templates/task-spec-template.md) 写任务书（必填源码落点与参考路径）；实验记录与校准台账用 [PMR](templates/pmr-log-template.md)、[校准台账](templates/calibration-template.md) 两个模板。
+4. **用模板派发**：用 [任务书模板](templates/task-spec-template.md) 写任务书（必填源码落点与参考路径），落 `workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`；每轮实验记录写进台账 `iterations/it-NNN.md`（骨架见 [PMR](templates/pmr-log-template.md)，**不另建文件**），校准用 [校准台账](templates/calibration-template.md)。
 5. **归档补丁**：改 `workspace/<scenario-id>/source/` 后 `scripts/manage_repos.sh export-patch <repo> --scenario <id>` 导出 patch 到 `workspace/<scenario-id>/ledger/patches/`。
 6. **有效果 → 沉淀条目**：过验收态门禁后写 `cases/<entry-id>.md`（7 节规范见 [docs/05](docs/05-case-library-and-ledger.md)）并更新 `cases/index.md`。
 
@@ -35,7 +35,7 @@
 
 | 任务类型 | 走哪条链 | 用哪个模板 / 门禁 |
 | :--- | :--- | :--- |
-| 性能调优（延迟 / 吞吐不达标） | J3 归因 → J6 | [任务书](templates/task-spec-template.md) + [PMR](templates/pmr-log-template.md) |
+| 性能调优（延迟 / 吞吐不达标） | J3 归因 → J6 | [任务书](templates/task-spec-template.md) + 台账 `it-NNN`（骨架见 [PMR](templates/pmr-log-template.md)） |
 | 新模型适配 | J1.5 盘点 → J5 | [任务书](templates/task-spec-template.md)（先查 `repos/refs/` + `workspace/<scenario-id>/source/`） |
 | 量化改造 | J2 账本 → J6 | [任务书](templates/task-spec-template.md) + L3 有损门（evalscope） |
 | 算子开发（阶梯 4） | J4 决策 → J5 | [任务书](templates/task-spec-template.md) + `test_op.py` / `benchmark_op.py` |
@@ -49,7 +49,7 @@
 | :--- | :--- | :--- |
 | [docs/](docs/) | 方法论 01~07 + 自研知识实操章节 | **自研 / 个性化知识一律在 `docs/`**（01 流水线与账本 / 02 诊断 SOP / 03 硬件与引擎 / 04 技能目录 / 05 案例库与台账 / 06 定焦 SOP / **07 文档回写与合入纪律**；实操章节路由见 [AGENTS.md §7](AGENTS.md)） |
 | [gates/](gates/README.md) | 双轨门禁规则与所有权 | 门禁由架构师持有，Agent 只读 |
-| [templates/](templates/) | 任务书 / PMR / 校准台账 | 派发与记录模板 |
+| [templates/](templates/) | 任务书 / PMR 骨架 / 校准台账 | 派发与记录模板 |
 | [repos/](repos/README.md) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | refs 严禁修改；待优化工程源码在 `workspace/<scenario-id>/source/`（每场景一份） |
 | `workspace/` | **工作区（不入库）**：`<scenario-id>/`（一个优化场景一份：`source/` / `optimized/` / `ledger/`）+ `_shared/calibration.md` | 每场景一份、自包含、并发安全 |
 | [scripts/](scripts/) | `manage_repos.sh` / `sync_ascend_skills.sh` | 源码与技能管理 |
@@ -85,7 +85,7 @@
 | [docs/07-doc-writeback-and-merge.md](docs/07-doc-writeback-and-merge.md) | 流程短板的回写路径、合入六条硬约束、自指规则只有提议权 |
 | [gates/README.md](gates/README.md) | 门禁所有权 + 数值语义容差表（L1 / L2 / L3 / 探索态-验收态） |
 | [templates/task-spec-template.md](templates/task-spec-template.md) | 昇腾化性能实验任务书（必填源码落点与参考路径） |
-| [templates/pmr-log-template.md](templates/pmr-log-template.md) | Predict / Measure / Review 三段式实验日志（msprof 证据） |
+| [templates/pmr-log-template.md](templates/pmr-log-template.md) | `iterations/it-NNN.md` 的叙述骨架（Predict / Measure / Review，不另建文件） |
 | [templates/calibration-template.md](templates/calibration-template.md) | NPU 硬件基线校准台账（环境冻结 / 代际对照 / 复测触发） |
 
 > docs 新增实操章节：docs/01 §阶梯 4 实操：算子开发与审查、§J6 实操：量化与门禁；docs/02 §msprof 采集与归因实操、§HCCL 与通信排障实操；docs/03 §CUDA→torch_npu 迁移与图模式修复、§vllm-ascend 接入与融合算子替换、§Mac 驱动远程开发拓扑与主机契约；docs/04 §2 来源仓昇腾相关性评估。取用路由见 [AGENTS.md §7](AGENTS.md)。

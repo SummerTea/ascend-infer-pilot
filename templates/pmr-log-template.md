@@ -1,8 +1,10 @@
-# PMR 实验记录单（昇腾版）—— `<实验代号>` / `<日期>`
+# PMR 记录骨架（昇腾版）—— `iterations/it-NNN.md` 的填写骨架（**不另建文件**）
+
+> **仅是叙述骨架**（Predict / Measure / Review 定叙事顺序）：必填字段以 [docs/05 §3](../docs/05-case-library-and-ledger.md) 的 `it-NNN` 字段表为准（改动 / 环境指纹 / 结论方向 / 决策 / 成本 / 下轮建议）。
 
 - 目标：`<在什么设备上什么模型，解决什么问题>`
 - 当前基线：`<相对 P_eff / BW_eff 表述，如 BW_util = 42%，TPOT = 35ms>`
-- 关联任务书：`<scenario-id / 任务书路径>`；校准依据：`<校准台账版本>`（见 [校准台账](../templates/calibration-template.md)）
+- 关联任务书：`workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`；校准依据：`<校准台账版本>`（见 [校准台账](../templates/calibration-template.md)）
 
 ## 1. 架构师事前预测（Predict）
 
@@ -16,9 +18,9 @@
 ## 2. 实验实测结果（Measure）
 
 - **msprof 采集命令**：
-  - 端到端：`<msprof --application="..." --output=/msprof_out/<scenario-id>/...>`
-  - 算子微基准：`<msprof op --application="python3 benchmark_op.py">`（`msprof op` 选项以本机 `msprof op -h` 为准，须上机核实）
-- **采集产物路径**：`<绝对路径 / workspace/<scenario-id>/ledger/profiling/...>`（不入库，随 PMR 一并归档）
+  - 端到端：`<msprof --output=/msprof_out/<scenario-id>/...  python3 ...>`（位置参数形式）
+  - 算子微基准：`<msprof op --output=<dir> --application="python3 benchmark_op.py">`（CANN 9.0.0 实测：`--application` 与位置参数两种形式均可）
+- **采集产物路径**：`<绝对路径 / workspace/<scenario-id>/ledger/profiling/<triage-NN | it-NNN>/...>`（不入库，随本轮 `it-NNN` 一并归档）
 - **实测最终数据**：`<相对 P_eff / BW_eff，如实测 TPOT = 26ms，BW_util = 63%>`
 - **原瓶颈消除证据**：msprof 火焰图 / 五表（Kernel / 通信重叠 / 融合模式 / 下发效率 / 内存效率）摘录，说明原瓶颈 X 耗时下降比例。
 

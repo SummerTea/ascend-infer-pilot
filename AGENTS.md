@@ -18,11 +18,11 @@
 
 **三环（一行）**：`R1 定阶段（prefill/decode/通信/调度 占比排序；加载属冷启动、不计入稳态窗口）→ R2 定类别（算/读/发/传）→ R3 定落点与手段（哪个器件 + 候选阶梯 + 收益上限）`。
 
-**粗/精账本**：J0 用**粗口径** `P_eff≈α·P_peak` / `BW_eff≈β·BW_peak`（α≈0.65 / β≈0.70，**只判「算还是读」，不得用于 J6 门禁**）；定焦后 J2 只对焦点维度做**精校准**。
+**粗/精账本**：J0 用**粗口径** `P_eff≈α·P_peak` / `BW_eff≈β·BW_peak`（α / β 初值与用法见 [docs/06 §5](docs/06-bottleneck-triage.md)；**只判「算还是读」，不得用于 J6 门禁**）；定焦后 J2 只对焦点维度做**精校准**。
 
 **硬出口**：占比 / `msprof` 证据 / 明确候选阶梯 / 收益上限**四条件全满足**才可进 J1/J4/J5，否则回 R1/R2 换手段——**条件与阈值的唯一权威见 [docs/06 §6](docs/06-bottleneck-triage.md)**。**无定位卡不得进入 J1 / J4 / J5**（硬约束）。
 
-**熔断**：R1~R3 **≤3 轮**（每轮记「学到什么 + 下轮换什么手段」），超限**升级给人**；「各段均衡且接近上限」**或 top-1 占比 <20% 的分布型** → 转**约束点分支**（容量/并行/精度/调度）。
+**熔断**：R1~R3 有**轮数上限**（上限值与每轮动作见 [docs/06 §7](docs/06-bottleneck-triage.md)），每轮记「学到什么 + 下轮换什么手段」，超限**升级给人**；「各段均衡且接近上限」**或分布型热点（top-1 占比阈值见 [docs/06 §7](docs/06-bottleneck-triage.md)）** → 转**约束点分支**（容量/并行/精度/调度）。
 细则唯一权威：[docs/06 §2/§3/§4/§6/§7/§8](docs/06-bottleneck-triage.md)。
 
 ## 1. J0→J6 阶段路由表
@@ -41,14 +41,14 @@
 | J1 目标定义 | **围绕已定焦瓶颈**冻结硬件代际 / 模型特征向量 / 负载分布 / SLO | 目标定义单（四输入） | `workspace/<scenario-id>/ledger/02-scope.md`（条目 md 仅在过验收态门禁后沉淀，见 §6.5） | 四维度齐全且与定位卡一致 ｜ [01 §2](docs/01-pipeline-and-ledger.md) |
 | J1.5 引擎能力盘点 | **先查 `repos/refs/` 参考实现 + `workspace/<scenario-id>/source/` 现有能力，再算 gap**；接入冒烟 + 独立黄金参考在 J2 后、J3 前；golden（独立黄金参考）落 `04-freeze-and-gate.md` | 支持矩阵 + 接入 gap 清单 | `repos/refs/`（只读）+ `workspace/<scenario-id>/source/<engine>/`（只读阅读）；gap 清单落 `workspace/<scenario-id>/ledger/02-scope.md` | gap 逐项落到五阶梯某一级 ｜ [01 §3](docs/01-pipeline-and-ledger.md) |
 | J2 物理上限核算 | 双约束下界 + 本机校准 `P_eff` / `BW_eff` | 双约束账本（`MFU_eff` / `BW_util` 分母） | `workspace/<scenario-id>/ledger/03-baseline-ledger.md` | 结果可复算、口径唯一 ｜ [01 §4](docs/01-pipeline-and-ledger.md) |
-| J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/<scenario-id>/ledger/iterations/` | 总耗时可映射明确归因 ｜ [02 §1](docs/02-ascend-diagnosis-sop.md) |
+| J3 基线归因 | J3.0 配置粗扫 → 实测基线 → 多维归因 | 基线报告 + msprof 证据 | `workspace/<scenario-id>/ledger/iterations/it-000-baseline.md`（回边时新建 `it-NNN`，不覆盖基线轮） | 总耗时可映射明确归因 ｜ [02 §1](docs/02-ascend-diagnosis-sop.md) |
 | J4 干预决策 | 五阶梯按 ROI 排序，**动手前声明源码落点** | 决策记录 + 落点声明 | `workspace/<scenario-id>/optimized/` 或 `workspace/<scenario-id>/source/<engine>/` | 收益/成本可量化、可回退 ｜ [01 §5](docs/01-pipeline-and-ledger.md) |
-| J5 任务书交付 | 两阶段：方案评审 → 实现自测 | 任务书 + `test_op.py` / `benchmark_op.py` | `workspace/<scenario-id>/optimized/{plugins,kernels,tools}/` 或 `workspace/<scenario-id>/source/<engine>/` | 架构师评审通过、门禁所有权分离 ｜ [任务书模板](templates/task-spec-template.md)（docs 无 J5 专节） |
+| J5 任务书交付 | 两阶段（阶梯 3~5：方案评审 → 实现自测；阶梯 1~2 探索态免前置评审） | 任务书 + `test_op.py` / `benchmark_op.py` | `workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`（任务书）+ `workspace/<scenario-id>/optimized/{plugins,kernels,tools}/` 或 `workspace/<scenario-id>/source/<engine>/` | 阶梯 3~5 架构师评审通过；阶梯 1~2 免前置评审（仍走轨道 A/B）；门禁所有权分离 ｜ [任务书模板](templates/task-spec-template.md)（docs 无 J5 专节） |
 | J6 双轨门禁 | 轨道 A 正确性 + 轨道 B 性能（探索态 / 验收态） | 门禁报告 | 过程 `workspace/<scenario-id>/ledger/04-freeze-and-gate.md` + `summary.md`；入库 `cases/<entry-id>.md` §5 | 双轨全过、探索态→验收态 ｜ [01 §J6 实操](docs/01-pipeline-and-ledger.md) |
 
-回边：J6 未达预期 → 回 J3 重新归因；J4 阶梯失败 → 回退上一阶梯；J2 证明物理不可达 → 回 J1 重谈 SLO；**J4/J5 无定位卡 → 回 J0**。
+回边：J6 未达预期 → 回 J3 重新归因（**新建 `it-NNN`，不覆盖 `it-000-baseline.md`**）；J4 阶梯失败 → **代码回退上一 `keep` 基线**，该候选记入 `methods.failed` 后转下一候选（**不回退到已证伪阶梯**）；J2 证明物理不可达 → 回 J1 重谈 SLO；**J4/J5 无定位卡 → 回 J0**。
 
-干预五阶梯（J4 按 ROI 排序，失败回退上一阶梯）：`阶梯 1 配置与编排调优` / `阶梯 2 已有成熟后端切换` / `阶梯 3 Out-of-tree 插件扩展` / `阶梯 4 专用 Kernel 移植与开发` / `阶梯 5 底层引擎内核重写与 Fork`。
+干预五阶梯（J4 按 ROI 排序，失败回退上一 `keep` 基线并转下一候选）：`阶梯 1 配置与编排调优` / `阶梯 2 已有成熟后端切换` / `阶梯 3 Out-of-tree 插件扩展` / `阶梯 4 专用 Kernel 移植与开发` / `阶梯 5 底层引擎内核重写与 Fork`。
 
 ## 1.5 场景台账工作流
 
@@ -60,13 +60,13 @@
 00-probe → 01-triage → 02-scope → 03-baseline-ledger → 04-freeze-and-gate → 05-bootstrap → loop: iterations/it-000-baseline（J3 基线）→ it-001..N（J4→J5→J6）→ summary.md
 ```
 
-> 上述为 **8 个顺序步**（`it-000-baseline` 只是 `iterations/it-NNN.md` 的首个实例，台账仍 9 项）；**台账 9 项中的 `state.json`** 随 loop **逐轮同步维护**，故不入顺序链。
+> 上述为 **8 个顺序步**（`it-000-baseline` 只是 `iterations/it-NNN.md` 的首个实例，台账仍 9 项）；**台账 9 项中的 `state.json` 在 Step 0 建台账时（随 `00-probe.md`）即初始化**，随 loop 逐轮同步维护，故不入顺序链。
 
 **与 §1 阶段对应**：J0→`01-triage`；J1→`02-scope`（四输入）；J1.5→`02-scope` 的 gap 段；J2→`03-baseline-ledger`；J3→`iterations/it-000-baseline.md`；J4→`optimized/` 或 `source/`；J5→任务书 `ledger/specs/spec-it-NNN.md` + `optimized/`；J6→`04-freeze-and-gate`（loop 前建、J6 回填）+ `summary.md` + 条目。
 
 **loop 每轮（`iterations/it-NNN.md`）**：假设 → 阶梯/方法 → 改动 → **环境指纹** → `msprof` 证据 → 门禁 A/B → 结论方向 → 决策 → 成本 → 下轮建议；**10 个字段的定义与顺序唯一权威见 [docs/05 §3](docs/05-case-library-and-ledger.md)**。
 
-**停止判据**：达标即停 / 预算耗尽即停 / 物理不可达即停。**回边**：J6 未达预期 → 回 J3；阶梯失败 → 回退上一阶梯；J2 物理不可达 → 回 J1 重谈 SLO。
+**停止判据**：达标即停 / 预算耗尽即停（`budget` 触顶）/ 物理不可达即停。**回边**：J6 未达预期 → 回 J3（新建 `it-NNN`）；阶梯失败 → 代码回退上一 `keep` 基线 + 转下一候选；J2 物理不可达 → 回 J1 重谈 SLO。
 
 **断点续跑（新会话接手 / 等待人工后恢复）**：先读 `state.json`——`resume_from` 是下一动作入口，`blocked_on` 非 `null` 即卡在人（`permission` / `input` / `slo` 期间**不得重复重试同一动作**，等持卡人回复后置空再续）；再读 `summary.md`（无则从最新 `iterations/it-NNN.md` 逆序读）；最后按 §1 阶段表核对出口条件。**已过门禁的阶段不重跑**。
 
@@ -109,7 +109,7 @@
 
 ## 6. J5 两阶段交付与门禁所有权
 
-1. **阶段一（方案评审）**：先交数学推导、Tiling 规划、边界保护、接口契约与参考代码位置；**未经方案评审严禁编码**。
+1. **阶段一（方案评审）**：先交数学推导、Tiling 规划、边界保护、接口契约与参考代码位置；**未经方案评审严禁编码**。**分级适用**：**阶梯 1~2**（配置与编排调优、成熟后端切换）在探索态可由 Agent 在 `it-NNN` 内自主闭环验证，**免前置方案评审**；**阶梯 3~5**（Out-of-tree 插件 / 专用 Kernel / 引擎源码）编码前**必须**先交任务书 `ledger/specs/spec-it-NNN.md` 并置 `blocked_on.reason = "review"` 等人工批准；**阶梯 1~2 仍须在 J5 归档任务书，仅免前置评审**。（**理由**：阶梯 1~2 配置级、可逆且探索态数据不入库；**影响面**：验收态仍必须走轨道 A/B 门禁。本条属 [docs/07 §3.3](docs/07-doc-writeback-and-merge.md) 新增例外，**已获人工确认**。）
 2. **阶段二（实现自测）**：方案确认后编码，强制附带独立正确性自测 + `msprof op` 微基准。
 3. **门禁所有权**：门禁脚本 / 阈值 / 基线由架构师持有并对 Agent **只读**（Agent 无写权限的独立仓或受保护分支），Agent 只交实现与自测，不得改门禁——见 [gates/README.md](gates/README.md)。
 4. 交付必须附从零复现命令与版本信息；「换台机器跑不出同样结果」即视为未通过。
@@ -152,7 +152,7 @@
 | [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` / `--force` / `--prune` / `--report <path>` / `--update-lock` / `--verify` / `--pinned` | 按 **13 仓 / 21 条 allowlist** 平铺同步（不入库；Triton 一律排除）；`--prune` 清陈旧；`--update-lock` 写 `scripts/skills.lock`；`--verify` 检漂移 |
 | `scripts/sync_to_remote.sh`（**待真机验证后落地**；落地须附真机 `--dry-run` + 一次真实 push/pull 实证，见 [docs/07 §2](docs/07-doc-writeback-and-merge.md)，成功后删标注并改为链接） | `push` / `pull` / `--dry-run` | Mac ↔ 主机文件层同步（push 仅 `source/` `optimized/`；pull 收 profiling 与 patches；纪律见 [docs/03 §2](docs/03-ascend-hardware-and-engines.md)） |
 
-> 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），它是台账 `iterations/it-NNN.md` 的**内容骨架**（不另建文件）。
+> 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），它是台账 `iterations/it-NNN.md` 的**叙述骨架**（不另建文件；必填字段以 [docs/05 §3](docs/05-case-library-and-ledger.md) 字段表为准）。
 
 ## 9. 主机环境取证
 

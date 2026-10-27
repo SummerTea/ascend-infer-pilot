@@ -20,7 +20,7 @@
 
 - **问什么**：瓶颈在 **prefill / decode / 通信 / 调度（下发）** 哪一段？（**加载**属冷启动、不计入稳态占比窗口；确属加载瓶颈 → 直接转 §8 容量 / IO 视角）
 - **手段（命令级）**：
-  - 端到端粗采：`msprof --output=<dir> --application="python3 run_serve_or_step.py"`（timeline 轨道占比；**混跑不可分离时按本节「占比口径」处理**；先 `source set_env.sh`，采集细节见 [诊断 SOP §msprof 采集与归因实操](02-ascend-diagnosis-sop.md)）
+  - 端到端粗采：`msprof --output=<dir> python3 run_serve_or_step.py`（timeline 轨道占比；**混跑不可分离时按本节「占比口径」处理**；先 `source set_env.sh`，采集细节见 [诊断 SOP §msprof 采集与归因实操](02-ascend-diagnosis-sop.md)）
   - 引擎指标：`vllm:time_to_first_token_seconds` vs `vllm:token_latency`（TTFT vs TPOT 占比，秒级定性）
   - 开环压测：`vllm bench serve --request-rate <固定到达率>`（固定到达率，**先预热到稳态**再统计）
 - **纪律**：预热到稳态；报**中位数与 P95/P99**（不报单次最优）；只信 `msprof`（[AGENTS.md §4](../AGENTS.md)）。
@@ -60,7 +60,7 @@
 
 - **粗口径（J0 内）**：`P_eff ≈ α · P_peak`、`BW_eff ≈ β · BW_peak`，建议初值 **α≈0.65 / β≈0.70**（可配，取值记录在定位卡）；**只用于判「算还是读」**；**明确禁止用于 J6 门禁或验收阈值**（粗口径不得用于 J6 门禁——门禁分母必须是本机实测，见 [门禁规则](../gates/README.md) 五）。
 - **精口径（原 J2，`03-baseline-ledger.md`）**：定焦后**只对焦点相关维度**做本机微基准校准——大 GEMM 得 `P_eff`、大 copy/STREAM 得 `BW_eff`（命令见 [docs/01 §4](01-pipeline-and-ledger.md)），**替换粗口径值**进 J2 账本。
-- **共享校准**：`workspace/_shared/calibration.md` 已有同 `<模型>@<硬件>` 精口径值时直接引用（不算粗口径），无需在 J0 重测；换 CANN / torch_npu / 芯片版本必须复测。
+- **共享校准**：`workspace/_shared/calibration.md` 已有同 `<硬件>@<CANN+驱动+image_id>@<精度>` 分节的精口径值时直接引用（**`image_id` 取前 12 位**，规则见 [校准台账](../templates/calibration-template.md) 顶部「落点」段）（不算粗口径），无需在 J0 重测；换 CANN / torch_npu / 驱动 / 容器 `image_id` / 芯片版本必须复测（**仅新增诊断工具的镜像变更例外**，见 [校准台账 §七](../templates/calibration-template.md)）。
 - **判据**：`B* = P_eff / BW_eff`；`AI > B*` → 算力受限，`AI < B*` → 访存受限；判据须与**当前精度**一致（换精度 `B*` 变，重判）。
 
 ---

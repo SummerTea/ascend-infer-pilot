@@ -44,23 +44,23 @@ command -v rsync jq && rsync --version    # jq 为 Mac 侧硬门槛（读 state.
 ```
 
 ```bash
-# 0) 登录评测机（SSH 端口、密钥与账号见场景台账 00-probe.md 的机器档案段）
+# 0) [宿主] 登录评测机（SSH 端口、密钥与账号见场景台账 00-probe.md 的机器档案段）
 ssh -i <密钥> -o IdentitiesOnly=yes -p <端口> <用户>@<主机>
 
-# 1) 加载 CANN 工具链（msprof / atc / hccl_test 等不在默认 PATH，须先 source）
+# 1) [容器内] 加载 CANN 工具链（宿主可能整包缺 msprof，见本节「通用坑」）
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
-# 2) 卡健康与拓扑
+# 2) [宿主] 卡健康与拓扑（容器内通常没有 npu-smi）
 npu-smi info
 npu-smi info -t topo
 
-# 3) msprof 最小探针（确认硬件计数器可读，防假活环境；在已装 torch_npu 的容器内执行）
+# 3) [容器内] msprof 最小探针（确认硬件计数器可读，防假活环境）
 msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"
 
-# 4) 通信基线（hccl_test）
+# 4) [容器内] 通信基线（hccl_test）
 all_reduce_perf -b 8 -e 1G -f 2 -g 8
 
-# 5) P_eff / BW_eff 校准（大 GEMM / 大 copy，msprof op 计时）
+# 5) [容器内] P_eff / BW_eff 校准（大 GEMM / 大 copy，msprof op 计时）
 msprof op --output=/tmp/gemm_calib --application="python3 calib_gemm.py"
 msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 ```
@@ -78,7 +78,7 @@ docker run -d --name pilot-<scenario> --privileged --ipc=host --shm-size=64g \
   -w /pilot <镜像 tag> tail -f /dev/null
 ```
 
-- **必须注入 `-e ASCEND_RT_VISIBLE_DEVICES=<契约分配卡列表>`**：这是本工程唯一的设备隔离机制（见下一条）；漏了容器照样起得来，但 8 卡对框架/ACL 全可见，`hccl_test` / 压测会按默认卡序跑到别人的卡上。**容器内 `npu-smi` 仍会列出全部卡，勿据此判断占用**（占用以宿主 `npu-smi info` + 契约分配卡列表为准）。
+- **必须注入 `-e ASCEND_RT_VISIBLE_DEVICES=<契约分配卡列表>`**：这是本工程唯一的设备隔离机制（见下一条）；漏了容器照样起得来，但 8 卡对框架/ACL 全可见，`hccl_test` / 压测会按默认卡序跑到别人的卡上。**容器内可能根本没有 `npu-smi`**（本机 CANN 容器实测 `command -v npu-smi` 为空）；**若存在，仍可能列出全部卡**——**无论哪种，占用一律以宿主 `npu-smi info` + 契约分配卡列表为准**。
 - **镜像内通常没有 `/usr/local/Ascend/driver`，必须挂宿主 driver**：漏挂时 `msprof` 报 `Device profiling is not supported on current chip`（实为 `chipType=0` 查不到 SOC 版本），会被误判成「卡不支持」；先验 `torch.npu.get_device_name(0)`（[诊断 SOP §4](02-ascend-diagnosis-sop.md) Step 0.5 的假活环境判别）。
 - **`--privileged` 是硬前提**（本机 ascend docker runtime 不可用），代价是注入宿主全部 `/dev`；设备隔离只能靠 `ASCEND_RT_VISIBLE_DEVICES`（见本节共享机红线 3）。
 - **重建镜像后必须重建容器**（`docker rm -f pilot-<scenario>` 再 `docker run`）并重跑下面的契约复核——旧容器仍指向旧 image ID。
@@ -88,12 +88,12 @@ docker run -d --name pilot-<scenario> --privileged --ipc=host --shm-size=64g \
 **通用坑**：
 
 - `latest/version.cfg` **可能为空文件**——取 CANN 版本用 `cann/version.cfg` 或目录名（`cann-<version>`），勿靠 `latest/` 软链。
-- 工具（`msprof` / `msprof-analyze` / `atc` / `hccl_test` / `ascend-dmi`）**不在默认 PATH**，`command -v` 为空是正常的，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
+- 工具（`msprof` / `msprof-analyze` / `atc` / `hccl_test` / `ascend-dmi`）**不在默认 PATH**，`command -v` 为空是正常的，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。**宿主可能整包缺 `msprof`**（本机实测：source 后 `command -v msprof` 仍为空，`/usr/local/Ascend` 下无该二进制）→ 采集一律进容器。
 - 宿主通常**未安装 torch / torch_npu**，评测与采集一律进 Docker 容器；`docker ps -a` / `docker images` 核对容器与镜像（镜像名与源见场景台账 00-probe.md 的机器档案段）。
 - 磁盘布局与容量以 `df -h` 实测为准（模型/数据集路径见场景台账 00-probe.md 的机器档案段）。
 - 共享机若使用 snap docker，或镜像自带 `VOLUME` 声明，宿主↔容器的共享目录可能不可见（表现为「宿主有文件、容器看不到」）；不要怀疑 scp，按场景 `00-probe.md` 的容器陷阱记录换挂载点。
 
-校准结果落 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<模型>@<硬件>` 分节；α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）。
+校准结果落 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<硬件>@<CANN+驱动+image_id>@<精度>` 分节（**`image_id` 取前 12 位**）——`P_eff` / `BW_eff` 与模型无关；含 α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）。
 
 ### Mac 驱动远程开发拓扑与主机契约
 
@@ -110,7 +110,7 @@ docker run -d --name pilot-<scenario> --privileged --ipc=host --shm-size=64g \
 **同步纪律（三条，违反即证据链失效）**
 
 1. **单向写**：代码与脚本只从 Mac → 主机（push）；profiling 产物与 `export-patch` 的 patch 只从主机 → Mac（pull）。**push 的范围只有 `source/` 与 `optimized/`；`ledger/` 默认只 pull 不 push**——整树 `rsync --delete` 会抹掉容器刚写的 `ledger/profiling/` 与 host 侧 `ledger/patches/`；确需推 ledger 时禁用 `--delete` 并 `--exclude 'ledger/profiling/' --exclude 'ledger/patches/'`。**`model/` 不 push**（只读快照，主机已有全量权重）。**禁止在主机或容器内直接改代码文件**——会被下次 push 覆盖且不留痕。
-2. **路径映射唯一**：Mac `workspace/<scenario-id>/<sub>/` ↔ 主机 `/home/pilot/<scenario-id>/<sub>/` ↔ 容器 `/pilot/<sub>/`，`<sub>` ∈ {`source`, `optimized`, `ledger`}；profiling 证据落 `ledger/profiling/<triage-NN | it-NNN>/`。映射只写在 `00-probe.md` 的服务器侧契约段，代码与脚本**禁止硬编码任一侧绝对路径**。
+2. **路径映射唯一**：Mac `workspace/<scenario-id>/<sub>/` ↔ 主机 `/home/pilot/<scenario-id>/<sub>/` ↔ 容器 `/pilot/<sub>/`，`<sub>` ∈ {`source`, `optimized`, `ledger`}；profiling 证据落 `ledger/profiling/<triage-NN | it-NNN>/`，J5 任务书落 `ledger/specs/spec-it-NNN.md`。映射只写在 `00-probe.md` 的服务器侧契约段，代码与脚本**禁止硬编码任一侧绝对路径**。
 3. **同步即证据**：每次实验前 push 一次，并在 `iterations/it-NNN.md` 的环境指纹里记 sync 时间戳与目标镜像 image ID——否则「容器里跑的是哪个版本」不可复算。
 
 **模型配置快照（Mac 侧 `workspace/<scenario-id>/model/`，只取配置与代码）**
@@ -154,10 +154,10 @@ modelscope download --model <repo> --revision <commit> \
 
 ```
 缺包 → 在主机上打新镜像（原镜像 + pip 层，新 tag）→ 记新 tag 与新 image ID
-     → 同步更新 00-probe.md 的服务器侧契约与 04-freeze-and-gate.md 的 image_id
+     → 同步更新 00-probe.md 的服务器侧契约；在 04-freeze-and-gate.md 的「指纹变更记录」段追加新 image ID（追加式，不覆盖冻结快照）
 ```
 
-**复测触发分级**：仅新增诊断工具（如 py-spy）→ 只更新契约与 image ID，**不触发**全量复测，但须同时满足三条跳过前提：① 新镜像基线按**可拉取摘要**固定：有 `RepoDigests` 时把 `docker image inspect <基线> --format '{{index .RepoDigests 0}}'` 的输出**整体**作为 `FROM` 的值（该输出已含 `name@sha256:<manifest digest>`，**不要再拼一层** `@sha256:`），无 `RepoDigests` 的本地基线先打稳定 tag 再引用——**不得**写成 `<tag>@sha256:<image ID>`（image ID 是配置摘要、不是 manifest 摘要，构建会失败并诱发「删掉 `@sha256` 退回 tag」的绕过）；② 新旧镜像内各取三项 diff：`cat /usr/local/Ascend/cann/version.cfg`、`python -c "import torch, torch_npu; print(torch.__version__, torch_npu.__version__)"`、`pip freeze`，三项全同才算版本串未变；新增包用 `--no-deps` 或 constraints 安装；③ 跳过决定与三项 diff 记入 `04-freeze-and-gate.md`。任一条不满足 → 镜像变更触及 **CANN / torch_npu / PyTorch / 驱动**，按 [docs/04 §5 B 类](04-skill-catalog-and-maintenance.md) 重跑校准与门禁。
+**复测触发分级**：仅新增诊断工具（如 py-spy）→ 只更新契约与 image ID，**不触发**全量复测，但须同时满足三条跳过前提：① 新镜像基线按**可拉取摘要**固定：有 `RepoDigests` 时把 `docker image inspect <基线> --format '{{index .RepoDigests 0}}'` 的输出**整体**作为 `FROM` 的值（该输出已含 `name@sha256:<manifest digest>`，**不要再拼一层** `@sha256:`），无 `RepoDigests` 的本地基线先打稳定 tag 再引用——**不得**写成 `<tag>@sha256:<image ID>`（image ID 是配置摘要、不是 manifest 摘要，构建会失败并诱发「删掉 `@sha256` 退回 tag」的绕过）；② 新旧镜像内各取三项 diff：`cat /usr/local/Ascend/cann/version.cfg`、`python -c "import torch, torch_npu; print(torch.__version__, torch_npu.__version__)"`、`pip freeze`（**比较时排除本次仅新增的诊断工具包本身**，并在跳过记录列出包名 / 版本 / 来源），三项全同才算版本串未变；新增包用 `--no-deps` 或 constraints 安装；③ 跳过决定与三项 diff 记入 `04-freeze-and-gate.md` 的「指纹变更记录」段（追加，不覆盖冻结快照）。任一条不满足 → 镜像变更触及 **CANN / torch_npu / PyTorch / 驱动**，按 [docs/04 §5 B 类](04-skill-catalog-and-maintenance.md) 重跑校准与门禁。
 
 **共享机红线（他人的容器 / 数据不可动）**
 

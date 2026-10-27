@@ -5,11 +5,11 @@
 ## 一、门禁所有权规则
 
 1. **所有权分离**：门禁脚本、基线数据、容差阈值由架构师持有并对 Agent **只读**，落在 **Agent 无写权限的独立仓或受保护分支**；CI 仅从该处拉取。任务书中显式声明该路径禁写。
-2. **独立执行**：门禁在干净容器 / CI 中运行，输入为冻结环境（CANN / torch_npu / PyTorch / 驱动 / 引擎 commit 快照）与固定的权重 / 数据集。
+2. **独立执行**：门禁在干净容器 / CI 中运行，输入为冻结环境（CANN / torch_npu / PyTorch / 驱动 / 引擎 commit / **容器 `image_id`** 快照）与固定的权重 / 数据集。
 3. **一键复现**：交付必须附从零复现的完整命令与版本信息；「换台机器跑不出同样结果」即视为未通过。
 4. **Agent 职责边界**：Agent 只提交实现与自测（`test_op.py` / `benchmark_op.py`），不得修改门禁脚本、基线或阈值。
 5. 五不准红线第 5 条（测试套件人为弱化）只是事后审查，不能替代上述机制。
-6. **版本快照**：门禁运行环境（CANN / torch_npu / 引擎 commit / 权重 / 数据集）与门禁结果作为**过程留痕**归档到 `workspace/<scenario-id>/ledger/`（不入库），供复现与复盘；**入库形态 = 条目 md 的第 5 节**（规范见 [docs/05](../docs/05-case-library-and-ledger.md)）。
+6. **版本快照**：门禁运行环境（CANN / torch_npu / PyTorch / 驱动 / 引擎 commit / **容器 `image_id`** / 权重 / 数据集）与门禁结果作为**过程留痕**归档到 `workspace/<scenario-id>/ledger/`（不入库），供复现与复盘；**入库形态 = 条目 md 的第 5 节**（规范见 [docs/05](../docs/05-case-library-and-ledger.md)）。门禁记录的 `image_id` 须与当轮 `it-NNN` 字段 4 及 `04-freeze-and-gate.md` 的「指纹变更记录」最新一条（未变更时即冻结快照）一致，不一致须记原因。
 
 ## 二、数值语义容差表（4 档）
 

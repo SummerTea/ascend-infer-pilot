@@ -61,20 +61,20 @@ L4 互联: 互联与分布式通信级 (Interconnect & Collective Level)
 上 Profiler 前先确认**硬件本身没坏、分母是实测天花板**（`P_eff`/`BW_eff` 见 [物理账本 §4.0](01-pipeline-and-ledger.md)）。新机器 / 换机 / CANN 或驱动升级后跑一次存档：
 
 ```bash
-# 0) 健康检查：8 卡都在、无降速、无 ECC 类告警
+# 0) [宿主] 健康检查：8 卡都在、无降速、无 ECC 类告警
 npu-smi info
 npu-smi info -t topo                # HCCS 拓扑矩阵（确认 910B3 单机 8 卡互联形态）
 
-# 1) 算力可达 P_eff：大 GEMM（BF16/FP8）msprof op 校准 → α = P_eff / P_peak
+# 1) [容器内] 算力可达 P_eff：大 GEMM（BF16/FP8）msprof op 校准 → α = P_eff / P_peak
 msprof op --output=/tmp/gemm_calib --application="python3 calib_gemm.py"
 
-# 2) 带宽可达 BW_eff：大 copy（buffer ≥ 512MiB）→ β = BW_eff / BW_peak
+# 2) [容器内] 带宽可达 BW_eff：大 copy（buffer ≥ 512MiB）→ β = BW_eff / BW_peak
 msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
-# 3) 通信基线：hccl_test（对应 nccl-tests 的昇腾实现）
+# 3) [容器内] 通信基线：hccl_test（对应 nccl-tests 的昇腾实现）
 all_reduce_perf -b 8 -e 1G -f 2 -g 8
 
-# 4) 锁频（与交付环境一致，多轮数据才可比）
+# 4) [宿主] 锁频（与交付环境一致，多轮数据才可比）
 npu-smi set -t clock -i <卡> -c <芯> --value <频率>
 ```
 
@@ -196,7 +196,7 @@ flowchart TD
 
 ```
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"   # --output / --application 等选项以本机 msprof op -h 为准，须上机核实
+msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"   # CANN 9.0.0 实测：`msprof op` 接受 `--application` 与位置参数两种形式；其余开关以 msprof op -h 为准
 ```
 
 **完成标准**：`/tmp/probe` 下生成 profile 产物且无权限/驱动报错；若失败先修权限与配套，不进入采集（Step 0.5 前置，见 §4）。若报 `Device profiling is not supported on current chip` 或 `chipType=0`，先查容器是否漏挂宿主 `/usr/local/Ascend/driver`（[硬件与引擎 §2 主机环境核对](03-ascend-hardware-and-engines.md) 的「容器起停最小参数集」段），**勿判为「卡不支持」**。
@@ -204,7 +204,7 @@ msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu
 ### 2. 端到端采集（L2 时序）
 
 ```
-msprof --output=/tmp/llm_trace --application="python3 run_serve_or_step.py"   # 参数以 msprof --help 为准，须上机核实
+msprof --output=/tmp/llm_trace python3 run_serve_or_step.py   # CANN 9.0.0 实测：端到端 --application 的 help 标注 will be discarded in later versions；新写一律用位置参数，且 app 自身参数必须写在脚本名之后
 ```
 
 **完成标准**：产物目录结构完整（含 timeline 数据），可用 MindStudio Insight 打开；采集覆盖 steady-state（跳过 warmup/首轮——首次采集含 JIT/图捕获开销）。
@@ -212,7 +212,9 @@ msprof --output=/tmp/llm_trace --application="python3 run_serve_or_step.py"   # 
 ### 3. 算子级微基准（L3 微架构）
 
 ```
-msprof op --output=<dir> --application="python3 benchmark_op.py"   # 亦可位置参数形式：msprof op python3 benchmark_op.py
+msprof op --output=<dir> --application="python3 benchmark_op.py"   # CANN 9.0.0 实测：等价位置参数 `msprof op --output=<dir> python3 benchmark_op.py` 亦可用，两种形式均通过
+
+> **写法约定**：`msprof op` 在本机 CANN 9.0.0 同时支持 `--application` 与位置参数，本仓示例**统一保留 `--application`**（该版本仍是官方选项）；若上游后续跟随端到端标注废弃，按位置参数替换即可（上两节已给等价形式）。
 ```
 
 **完成标准**：得到 Top-N 算子耗时/占比/有效带宽；`benchmark_op.py` 必须预热到稳态、输出张量显式零初始化（防 RMW 掩盖）。

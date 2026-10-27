@@ -17,8 +17,8 @@
 | **J1.5 引擎能力盘点** | 目标定义卡 + 引擎源码（`workspace/<scenario-id>/source/*`） | **gap 清单**（见 §3）；接入冒烟 + 黄金参考在 J2 之后、J3 之前执行 | gap 逐项落到五阶梯某一级 | J1 特征提取有误 → 回 J1 |
 | **J2 物理上限核算** | 目标定义卡 + 硬件规格表 + 本机校准 | 双约束账本：`P_eff` / `BW_eff` / `B*` / 显存账本 / 时间下界 | 结果可复算、口径唯一 | **物理不可达 → 回 J1 重谈 SLO** |
 | **J3 基线归因** | 双约束账本 + 接入冒烟通过 + J3.0 配置粗扫 | 可信基线 + 多维度瓶颈分解（L1–L4） | 归因结论与定位卡（`01-triage.md`）一致；若归因出**新**瓶颈且占端到端 ≥ 20% → 回 J0 重定焦 | 归因到默认配置瓶颈 → 先做 J3.0 粗扫 |
-| **J4 干预决策** | 基线归因 + gap 清单 | **ROI 决策**（五阶梯 + 并列三选项） | 收益/成本可量化、可回退 | 阶梯失败 → **回退上一阶梯** |
-| **J5 任务书交付** | ROI 决策 + 基线数据 | 两阶段任务书（方案评审 → 实现自测），五不准红线 | 架构师评审通过；门禁所有权分离 | 方案不通过 → 返工 |
+| **J4 干预决策** | 基线归因 + gap 清单 | **ROI 决策**（五阶梯 + 并列三选项） | 收益/成本可量化、可回退 | 阶梯失败 → 代码回退上一 `keep` 基线 + 转下一候选（§5.3） |
+| **J5 任务书交付** | ROI 决策 + 基线数据 | 两阶段任务书（阶梯 3~5：方案评审 → 实现自测；阶梯 1~2 探索态免前置评审），五不准红线 | **阶梯 3~5** 架构师评审通过；**阶梯 1~2** 免前置评审（仍走轨道 A/B 门禁）；门禁所有权分离 | 阶梯 3~5 方案不通过 → 返工（阶梯 1~2 仍归档任务书，仅免前置评审） |
 | **J6 双轨门禁** | 任务书 + 实现 + 基线 | 验收结论（轨道 A 正确性 + 轨道 B 性能/稳定性） | 双轨全过、探索态→验收态 | **未达预期 → 回 J3 重新归因** |
 
 ### 1.2 回边拓扑
@@ -29,7 +29,7 @@ flowchart LR
     J4 -. "无定位卡 → 回 J0" .-> J0
     J2 -- "物理不可达" --> J1
     J6 -- "未达预期" --> J3
-    J4 -- "阶梯失败 → 回退上一阶梯（必要时才回 J3 重新归因）" --> J4
+    J4 -- "阶梯失败 → 回退上一 keep 基线 + 转下一候选（必要时才回 J3 重新归因）" --> J4
     J5 -- "方案不通过 → 返工" --> J5
 ```
 
@@ -45,7 +45,7 @@ flowchart LR
 | **J1 目标定义** | `workspace/<scenario-id>/ledger/02-scope.md`（目标四输入） |
 | **J1.5 引擎能力盘点** | `workspace/<scenario-id>/ledger/02-scope.md` 的 **gap 段** |
 | **J2 物理上限核算** | `workspace/<scenario-id>/ledger/03-baseline-ledger.md` |
-| **J3 基线归因** | `workspace/<scenario-id>/ledger/iterations/it-000-baseline.md`（基线轮；无改动与相对收益，字段 3 / 6 / 8 填「—（基线）」；前置：`00-probe.md` 的机器档案与齐备性检查） |
+| **J3 基线归因** | `workspace/<scenario-id>/ledger/iterations/it-000-baseline.md`（基线轮；字段 7 / 8 填「—（基线）」，字段 3 初始基线填「—」、回边新基线记配置变更，**字段 6 填基线实测值**（开环压测口径见 [docs/02 §6](02-ascend-diagnosis-sop.md)）作后续轮分母；二次回边**新建 `it-NNN` 重新归因，不覆盖 `it-000-baseline.md`**，若回边变更配置则新轮即新基线轮并在轮次头标注；前置：`00-probe.md` 的机器档案与齐备性检查） |
 | **J4 干预决策** | 产出落 `workspace/<scenario-id>/optimized/` 或 `source/` |
 | **J5 任务书交付** | 任务书 `workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`（[模板](../templates/task-spec-template.md)）+ 产出在 `workspace/<scenario-id>/optimized/` |
 | **J6 双轨门禁** | `04-freeze-and-gate.md`（loop 前创建、J6 回填验收结论）+ `summary.md` + 沉淀条目 `cases/<entry-id>.md` |
@@ -94,29 +94,29 @@ J1 在 **J0 定焦之后**执行；只冻结**与焦点相关**的维度，无�
 
 **军规**：任何「利用率低于 X%」的异常判定，分母必须是 `P_eff` / `BW_eff`。以理论峰值为分母，会把编译器（毕昇 / AKG）与库（CANN ACLNN / ATB）的正常效率损耗误判为「引擎缺陷」，直接诱发错误的干预阶梯选择。
 
-**口径分工**：J0 定焦用**粗口径**估值（α≈0.65 / β≈0.70）只判算/访存；**本文的精校准只对焦点相关维度执行**，且**粗口径不得用于 J6 门禁**。
+**口径分工**：J0 定焦用**粗口径**估值（α / β 初值见 [docs/06 §5](06-bottleneck-triage.md)）只判算/访存；**本文的精校准只对焦点相关维度执行**，且**粗口径不得用于 J6 门禁**。
 
 **本机校准方法（910B3，昇腾工具）**：
 
 ```bash
-# 1) 算力可达上限 P_eff：CANN 大 GEMM（BF16/FP8），msprof 采算子耗时
+# 1) [容器内] 算力可达上限 P_eff：CANN 大 GEMM（BF16/FP8），msprof 采算子耗时
 #    用 ACLNN Matmul 或 ATB GEMM 起 8192x8192 级别大方阵，跑 100 轮取稳态
 #    P_eff = FLOPs / T_msprof_op；α = P_eff / P_peak
 msprof op --output=/tmp/gemm_calib --application="python3 calib_gemm.py"
 
-# 2) 带宽可达上限 BW_eff：AscendC / ACLNN 大块 copy（HBM 往返，buffer ≥ 512MiB）
+# 2) [容器内] 带宽可达上限 BW_eff：AscendC / ACLNN 大块 copy（HBM 往返，buffer ≥ 512MiB）
 #    BW_eff = (读+写字节) / T_msprof_op；β = BW_eff / BW_peak
 msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 
-# 3) 通信可达基线：hccl_test（对应 nccl-tests），busbw 落盘存档
+# 3) [容器内] 通信可达基线：hccl_test（对应 nccl-tests），busbw 落盘存档
 all_reduce_perf -b 8 -e 1G -f 2 -g 8   # 与同拓扑基线比，不对理论值比
 
-# 4) 健康检查与锁频：npu-smi info（温度/功耗/健康）、npu-smi set 锁时钟
+# 4) [宿主] 健康检查与锁频：npu-smi info（温度/功耗/健康）、npu-smi set 锁时钟
 npu-smi info
 npu-smi set -t clock -i 0 -c 0 --value 1500   # 锁频后多轮数据才可比
 ```
 
-> 校准结果存档为 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<模型>@<硬件>` 分节；含 α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）；**换 CANN / torch_npu / 芯片版本必复测**（见 [技能目录 §维护](04-skill-catalog-and-maintenance.md)）。
+> 校准结果存档为 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<硬件>@<CANN+驱动+image_id>@<精度>` 分节（**`image_id` 取前 12 位**），不含模型；含 α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）；**换 CANN / torch_npu / 驱动 / 容器 `image_id` / 芯片版本必复测**（仅新增诊断工具的镜像变更例外见 [校准台账 §七](../templates/calibration-template.md)；常规复测见 [技能目录 §维护](04-skill-catalog-and-maintenance.md)）。
 
 ### 4.1 参数口径（Dense 与 MoE 必须分开）
 
@@ -215,11 +215,12 @@ flowchart TD
     Step3 --"不能"--> Step4{"【阶梯 4：专用 Kernel 移植与开发】<br/>该结构/精度是否确无生态现成实现？"}
     Step4 --"能"--> Done4["AscendC / TileLang-Ascend / CATLASS 编写 Kernel（Triton-Ascend 仅了解/排错，不作实现路线） → workspace/<scenario-id>/optimized/kernels/"]
     Step4 --"不能"--> Step5["【阶梯 5：底层引擎内核重写与 Fork】<br/>重构调度状态机、内存分配与核心执行流 → workspace/<scenario-id>/source/<engine>/"]
-    Done4 -. "方案失败 → 回退上一阶梯" .-> Step3
-    Step5 -. "收益不抵维护成本 → 回退上一阶梯" .-> Step4
+    Done4 -. "方案失败 → 记 failed，转下一候选" .-> Fail["代码回退到上一 keep 基线（best_metric.iteration），不回退到已证伪阶梯"]
+    Step5 -. "收益不抵维护成本 → 记 failed，转下一候选" .-> Fail
+    Fail --> Next["按 ROI 选下一候选；候选耗尽 → 回 J3 / J1"]
 ```
 
-> **排序原则**：按 **ROI（预期收益 ÷ 引入成本）从高到低**尝试，优先可逆、不破坏主干升级能力的方案。**不要以阶梯序号代替收益排序**——按序号走会错失「低成本高收益」选项。
+> **排序原则**：按 **ROI（预期收益 ÷ 引入成本）从高到低**尝试，优先可逆、不破坏主干升级能力的方案。**不要以阶梯序号代替收益排序**——按序号走会错失「低成本高收益」选项。**阶梯 1~3 的方案失败按同一失败处理**（同样回退 + 记 `failed` + 转下一候选），图中只画出 4/5 的失败边以免混淆。
 
 ### 5.2 与五阶梯并列的三个选项（必须纳入决策）
 
@@ -237,7 +238,7 @@ flowchart TD
 | **阶梯 4：专用 Kernel 移植与开发** | 全新结构（非标头维 MLA、长线性注意力）、或目标代际缺失原生指令 | AscendC / PyPTO / TileLang-Ascend / CATLASS 编写 Fused 算子（Triton-Ascend 仅了解/排错，不作实现路线；RoPE/KV write/QK Norm/MoE GMM/MLA absorb）；前沿 Kernel 向 A2A3 / A5 移植；落 `workspace/<scenario-id>/optimized/kernels/` | 高（1~2 周） | 中（精度与多代际分支持续维护） |
 | **阶梯 5：底层引擎内核重写与 Fork** | 引擎控制面延迟过高（Python 瓶颈无法根除）、或调度模型与架构不兼容 | 调度状态机下沉、重写内存管理与 HCCL 通信流；必须改引擎时落 `workspace/<scenario-id>/source/<engine>/` 并走 `export-patch` 导出 | 极高（月级） | 极高（脱离社区主干，背负沉重包袱） |
 
-**回退规则**：阶梯是「尝试顺序」而非「单向阶梯」。阶梯 4/5 尝试失败后必须回退到上一阶梯（并在 `workspace/<scenario-id>/ledger/`（台账）留痕），不得因已投入成本继续加码。
+**失败处理规则**：阶梯是「候选标签 + ROI 优先序」，**不是回退目标**。任一方案失败 → ① **代码回退到最后一个 `keep` 且门禁通过的轮次**（`state.json.best_metric.iteration`，见 [docs/05 §3](05-case-library-and-ledger.md) 字段说明）；② 该候选记入 `state.json.methods.failed`，**不得原样重试**；③ 按 ROI 转向**下一候选**（ROI 序以 `01-triage.md` 定位卡的候选阶梯与收益上限为准，`hypotheses` 按该序排列；不得因已投入成本继续加码）；④ 当前瓶颈的候选耗尽 → 回 J3 换次高占比瓶颈，或回 J1 重谈 SLO。全过程在该轮 `it-NNN` 留痕。
 
 **源码落点对照**：阶梯 3 → `workspace/<scenario-id>/optimized/plugins/`；阶梯 4 → `workspace/<scenario-id>/optimized/kernels/`；阶梯 2/4/5 必须改引擎 → `workspace/<scenario-id>/source/<engine>/`（改后用 `bash scripts/manage_repos.sh export-patch <engine> --scenario <scenario-id>` 导出补丁到 `workspace/<scenario-id>/ledger/patches/`，不入库）；只读参考 → `repos/refs/<repo>/`（严禁修改）。落点与交付物规范见 [docs/05](05-case-library-and-ledger.md)。
 
@@ -248,9 +249,9 @@ flowchart TD
 | 场景 | 动作 |
 | :--- | :--- |
 | J6 未达预期 | 回 **J3** 重新归因（可能是归因错或收益没兑现，不是简单重试） |
-| 阶梯 4/5 尝试失败 | 回退**上一阶梯**并留痕（PMR 日志） |
+| 任一阶梯尝试失败 | 代码回退到上一 `keep` 基线，记入 `methods.failed`，转下一 ROI 候选（见 §5.3 失败处理规则） |
 | J2 物理不可达 | 回 **J1** 重谈 SLO（或走「修订 SLO」选项） |
-| J3 归因到默认配置瓶颈 | 先做 J3.0 配置粗扫，把「最佳已知配置」固化为基线 |
+| J3 归因到默认配置瓶颈 | 先做 J3.0 配置粗扫，把「最佳已知配置」固化为**新基线轮**（回边新建 `it-NNN` 并在轮次头标注；`it-000-baseline.md` 永不覆盖） |
 | 改造涉及共享路径 | J6 轨道 B 回归抽检 ≥1 Dense + 1 MoE + 1 长上下文 |
 
 ---

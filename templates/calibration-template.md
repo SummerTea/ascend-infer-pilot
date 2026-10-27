@@ -1,7 +1,7 @@
 # NPU 硬件基线校准台账（P_eff / BW_eff）
 
-> 任何「利用率低于 X%」的判定，分母必须来自本台账的**本机实测** `P_eff` / `BW_eff`，禁止用理论峰值（见 [AGENTS.md](../AGENTS.md) §3）。台账更新即触发引用方（任务书 / 门禁阈值 / PMR）同步复算。
-> **落点**：本台账实际存放于 `workspace/_shared/calibration.md`（跨场景共享、**不入库**，按 `<模型>@<硬件>` 分节）。
+> 任何「利用率低于 X%」的判定，分母必须来自本台账的**本机实测** `P_eff` / `BW_eff`，禁止用理论峰值（见 [AGENTS.md](../AGENTS.md) §3）。台账更新即触发引用方（任务书 / 门禁阈值 / 本轮 `it-NNN`）同步复算。
+> **落点**：本台账实际存放于 `workspace/_shared/calibration.md`（跨场景共享、**不入库**，按 `<硬件>@<CANN+驱动+image_id>@<精度>` 分节——`P_eff` / `BW_eff` 是大 GEMM / 大 copy 的**硬件属性，与模型无关**，故主键不含模型）。**分节名取 `image_id` 前 12 位**（全量 ID 记在分节体内）；同硬件 / 版本 / 精度的多个旧分节**合并为一个新键**，冲突以复测值为准。**旧分节**若仍按 `<模型>@<硬件>` 命名：复测后按新键重命名；未复测的旧值只作参考，**不得用于 J6 门禁**。
 
 ## 一、环境冻结（每次复测必须完整记录）
 
@@ -12,6 +12,7 @@
 | torch_npu 版本 | `<pip show torch-npu>` |
 | PyTorch 版本 | `<pip show torch>` |
 | 驱动 HDK 版本 | `<npu-smi / dmesg 核对>` |
+| 容器镜像 image_id | `<docker image inspect <tag> --format '{{.Id}}'>`（分节键的一部分，容器内 CANN 可能与宿主不同） |
 | npu-smi 版本 | `<npu-smi 版本>`（见当前场景台账 00-probe.md 的机器档案段） |
 | 服务器 / 拓扑 | 卡间拓扑 `<HCCL 或 RoCE>`；服务器 IP / SSH 端口 / 卡型与数量 / HBM 以当前场景台账 `00-probe.md` 的**机器档案段为权威**，本表不重复落笔 |
 
@@ -43,12 +44,13 @@
 
 ## 六、msprof 采集命令与产物路径
 
-- 端到端：`msprof --application="<命令>" --output=<路径>` → 产物 `<性能剖析文件路径>`。
-- 算子微基准：`msprof op --application="python3 benchmark_op.py"` → 产物 `<msprof op 报告路径>`（`msprof op` 选项以本机 `msprof op -h` 为准，须上机核实）。
-- 产物统一归档到 `workspace/<scenario-id>/ledger/profiling/`（不入库），随 [PMR](../templates/pmr-log-template.md) 一并留存。
+- 端到端：`msprof --output=<路径> <命令>` → 产物 `<性能剖析文件路径>`（`--application` 在 CANN 9.0.0 已废弃，用位置参数）。
+- 算子微基准：`msprof op --output=<dir> --application="python3 benchmark_op.py"` → 产物 `<msprof op 报告路径>`（`--application` 与位置参数两种形式均可，见 [docs/02](../docs/02-ascend-diagnosis-sop.md)）。
+- 产物统一归档到 `workspace/<scenario-id>/ledger/profiling/<triage-NN | it-NNN>/`（不入库），随本轮 `it-NNN`（骨架见 [PMR 模板](../templates/pmr-log-template.md)）一并留存。
 
 ## 七、复测触发条件
 
-- **换 CANN / torch_npu / PyTorch / 驱动 HDK 版本** → 必须复测并更新本台账。
+- **换 CANN / torch_npu / PyTorch / 驱动 HDK 版本 / 容器 `image_id`（重建镜像）** → 必须复测并更新本台账。
+- **例外（沿用原分节值）**：`image_id` 变更但属 [docs/03 §2](../docs/03-ascend-hardware-and-engines.md) 的跳过路径（**仅新增诊断工具**且三项版本 diff 全同）→ **不触发**全量复测：新分节注明「版本串相同，继承自 `<旧分节>`」并引用原值。比较 `pip freeze` 时**排除本次新增的诊断工具包本身**，并在跳过记录列出包名 / 版本 / 来源；诊断包之外的任何新增或升级一律复测。
 - **换芯片版本（910B3 ↔ 950）** → 必须复测（UB 组织、SIMT、HiF8、CCU、msprof 指标均不同，见 §五）。
 - 台账更新后，引用 `P_eff` / `BW_eff` 的任务书与门禁阈值须同步复算；复测需先跑通本台账的 §一 环境冻结记录。

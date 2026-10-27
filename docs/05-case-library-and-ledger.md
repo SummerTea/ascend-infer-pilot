@@ -139,23 +139,23 @@
 
 > **位置**：`workspace/<scenario-id>/ledger/`（不入库、**每场景一份**、自包含、场景间并发安全）；`workspace/_shared/` 跨场景共享。
 > **职责**：台账是**过程留痕**（决策依据与证据链），条目 md 是**沉淀结论**——两者互为引用，不重复。
-> **工作流顺序**：`00-probe → 01-triage → 02-scope → 03-baseline-ledger → 04-freeze-and-gate → 05-bootstrap → loop: iterations/it-000-baseline（J3 基线归因）→ it-001..N（J4→J5→J6 微循环）→ summary.md`（**8 个顺序步不变**：`it-000-baseline` 只是 `iterations/it-NNN.md` 的首个实例，台账仍 9 项；`state.json` 随 loop 逐轮同步维护，不入顺序链）；**停止判据：达标即停 / 预算耗尽即停 / 物理不可达即停**；回边：J6 未达预期→回 J3；阶梯失败→回退上一阶梯；J2 物理不可达→回 J1 重谈 SLO；**J4/J5 无定位卡 → 回 J0**（细则以本文件为唯一权威）。
+> **工作流顺序**：`00-probe → 01-triage → 02-scope → 03-baseline-ledger → 04-freeze-and-gate → 05-bootstrap → loop: iterations/it-000-baseline（J3 基线归因）→ it-001..N（J4→J5→J6 微循环）→ summary.md`（**8 个顺序步不变**：`it-000-baseline` 只是 `iterations/it-NNN.md` 的首个实例，台账仍 9 项；`state.json` **在 Step 0 建台账（随 `00-probe.md`）即初始化**，此后随 loop 逐轮同步维护，不入顺序链）；**停止判据：达标即停 / 预算耗尽即停 / 物理不可达即停**；回边：J6 未达预期→回 J3（**新建 `it-NNN` 重新归因，不覆盖 `it-000-baseline.md`**）；阶梯失败→代码回退上一 `keep` 基线 + 记 `methods.failed` + 转下一候选（不回退到已证伪阶梯，见 [docs/01 §5.3](01-pipeline-and-ledger.md)）；J2 物理不可达→回 J1 重谈 SLO；**J4/J5 无定位卡 → 回 J0**（细则以本文件为唯一权威）。
 
 | 文件 | 职责 | 关键字段 |
 | :--- | :--- | :--- |
-| `00-probe.md` | ① **机器档案**（登录方式 / 卡型与数量 / HBM / 驱动 / CANN / 工具与 PATH 前提 / 容器与镜像 / 磁盘 / 模型·数据集落点）+ **服务器侧契约**（根路径 / 容器名 / 镜像 tag+image ID / 挂载映射 / 分配卡 / 同步方式）+ **本场景前置齐备性检查**（依赖 / 工具（远端 / 本机 Mac 两维）/ 环境 / 模型介质 → 具备 / 缺失 / 待确认）+ **模型源码探测**（`config.json` / `*.py` / 并行与量化配置 / 算子清单 / commit；**排除权重介质**）+ 与上次探测的**差异**（换机 / 换版本留痕） | 机器档案字段：登录方式（SSH 密钥 / 端口 / 账号 / 主机名）/ 卡型与数量、HBM 容量每卡、卡间拓扑 / 驱动、CANN 版本（取法：`cann/version.cfg` 或目录名）/ 工具与 PATH 前提（`source set_env.sh` 后 msprof / atc / hccl_test 才可用；宿主无 torch / torch_npu → 评测与采集一律进容器）/ 容器与镜像（镜像名与源）/ 磁盘（容量 / 已用 / 大文件落点）/ 模型·数据集落点（路径）；齐备性：依赖 / **工具（远端主机+容器 / 本机 Mac 两维）** / 环境（**容器内 NPU 可运行性**：最小 `msprof op` 探针通过）/ 模型介质（具备 / 缺失 / 待确认）；源码探测：**快照来源（仓库@revision / 抓取 glob / 落点 `model/`）** + `config.json` / `*.py` / 并行与量化配置 / 算子清单 / commit（**排除权重介质**）；**服务器侧契约**：服务器根路径 `/home/pilot/<scenario-id>/`（子目录镜像 Mac 侧：`source/` `optimized/` `ledger/`；宿主机临时 cwd 不入契约，profiling 证据落 `ledger/profiling/<triage-NN | it-NNN>/`）/ 容器名 `pilot-<scenario>` / 镜像 tag（人看）+ image ID（指纹用：`docker image inspect <tag> --format '{{.Id}}'`；本地构建镜像无 RepoDigests，故指纹取 image ID；实验前核对运行容器 `.Image` 与该值一致，不一致视为未按契约运行）/ 挂载映射（host → container，契约定后不可改）/ 模型·数据集（共享只读目录挂 `:ro`，场景内不复制）/ 分配卡列表（`ASCEND_RT_VISIBLE_DEVICES`，初始化时确认未被他人占用）/ 同步方式（rsync push|pull，时间戳记入 it-NNN 环境指纹）；差异：换机 / 换版本留痕 |
+| `00-probe.md` | ① **机器档案**（登录方式 / 卡型与数量 / HBM / 驱动 / CANN / 工具与 PATH 前提 / 容器与镜像 / 磁盘 / 模型·数据集落点）+ **服务器侧契约**（根路径 / 容器名 / 镜像 tag+image ID / 挂载映射 / 分配卡 / 同步方式）+ **本场景前置齐备性检查**（依赖 / 工具（远端 / 本机 Mac 两维）/ 环境 / 模型介质 → 具备 / 缺失 / 待确认）+ **模型源码探测**（`config.json` / `*.py` / 并行与量化配置 / 算子清单 / commit；**排除权重介质**）+ 与上次探测的**差异**（换机 / 换版本留痕） | 机器档案字段：登录方式（SSH 密钥 / 端口 / 账号 / 主机名）/ 卡型与数量、HBM 容量每卡、卡间拓扑 / 驱动、CANN 版本（取法：`cann/version.cfg` 或目录名）/ 工具与 PATH 前提（**容器内** `source set_env.sh` 后 msprof / atc / hccl_test 才可用；宿主可能整包缺 msprof；宿主无 torch / torch_npu → 评测与采集一律进容器）/ 容器与镜像（镜像名与源）/ 磁盘（容量 / 已用 / 大文件落点）/ 模型·数据集落点（路径）；齐备性：依赖 / **工具（远端主机+容器 / 本机 Mac 两维；宿主缺 `msprof`/`atc` **不计**缺失——采集在容器，容器内缺才计缺失）** / 环境（**容器内 NPU 可运行性**：最小 `msprof op` 探针通过）/ 模型介质（具备 / 缺失 / 待确认）；源码探测：**快照来源（仓库@revision / 抓取 glob / 落点 `model/`）** + `config.json` / `*.py` / 并行与量化配置 / 算子清单 / commit（**排除权重介质**）；**服务器侧契约**：服务器根路径 `/home/pilot/<scenario-id>/`（子目录镜像 Mac 侧：`source/` `optimized/` `ledger/`；宿主机临时 cwd 不入契约，profiling 证据落 `ledger/profiling/<triage-NN | it-NNN>/`）/ 容器名 `pilot-<scenario>` / 镜像 tag（人看）+ image ID（指纹用：`docker image inspect <tag> --format '{{.Id}}'`；本地构建镜像无 RepoDigests，故指纹取 image ID；实验前核对运行容器 `.Image` 与该值一致，不一致视为未按契约运行）/ 挂载映射（host → container，契约定后不可改）/ 模型·数据集（共享只读目录挂 `:ro`，场景内不复制）/ 分配卡列表（`ASCEND_RT_VISIBLE_DEVICES`，初始化时确认未被他人占用）/ 同步方式（rsync push|pull，时间戳记入 it-NNN 环境指纹）；差异：换机 / 换版本留痕 |
 | `01-triage.md` | ② **J0 定焦**：三环记录（R1 阶段占比 / R2 类别与证据 / R3 落点与候选阶梯）+ **定位卡** | 关键字段：`负载定义 / 阶段 / 类别 / 证据（msprof 命令+指标值+采集配置）/ 占端到端比 / 候选阶梯 / 收益上限 / 置信度 / 未定项 / 熔断轮次记录 / 结论（四条件逐条 ✅❌）`；**硬出口四条件与 3 轮熔断见 `docs/06 §6/§7`** |
 | `02-scope.md` | ③ J1 目标四输入（**围绕定位卡的焦点**）+ J1.5 gap + 停止判据 | 硬件上下文 / 模型结构特征向量 / 负载分布 / SLO 与目标指标；gap 清单（组件、引擎现状、需改动、源码落点、对应阶梯）；停止判据（达标即停 / 预算耗尽即停 / 物理不可达即停） |
 | `03-baseline-ledger.md` | ④ J2 双约束账本 | `P_eff` / `BW_eff` / `B*`；Decode·Prefill 时间下界；显存容量账本（权重 / KV / 系统余量）；`MFU_eff` / `BW_util` 实测口径 |
-| `04-freeze-and-gate.md` | ⑤ **本次实验的冻结指纹**（实际运行所用 CANN↔torch_npu↔PyTorch↔驱动 / 引擎 commit / 锁频 / 权重 hash / **`image_id`**（容器镜像 image ID——容器内 CANN 可能与宿主不同，指纹必须锚容器））+ 黄金参考 + 轨道 A/B 门禁口径阈值 | 每次实验核对并记录**实际**指纹，须与 `00-probe.md` 的机器档案 + 服务器侧契约一致，不一致要记原因；golden（transformers eager）；轨道 A（相应档位 L1/L2/L3）与轨道 B 的阈值与判据（**loop 前冻结创建、J6 验收时回填验收结论**） |
+| `04-freeze-and-gate.md` | ⑤ **本次实验的冻结指纹**（实际运行所用 CANN↔torch_npu↔PyTorch↔驱动 / 引擎 commit / 锁频 / 权重 hash / **`image_id`**（容器镜像 image ID——容器内 CANN 可能与宿主不同，指纹必须锚容器））+ 黄金参考 + 轨道 A/B 门禁口径阈值 | 每次实验核对实际指纹（**值记于 `it-NNN` 字段 4**），须与 `00-probe.md` 的机器档案 + 服务器侧契约一致，不一致要记原因；golden（transformers eager）；轨道 A（相应档位 L1/L2/L3）与轨道 B 的阈值与判据（**单场景单文件、分两段**：「**冻结快照**」= loop 前指纹，**不可改**；「**指纹变更记录**」= 追加式（旧 → 新 `image_id`、三项 diff、是否触发全量复测）；逐轮核对只记「偏差 + 原因 + 结论」，实际值以 `it-NNN` 字段 4 为准；J6 验收时回填结论） |
 | `05-bootstrap.md` | ⑥ 初始建议启动 | 首个假设与对应阶梯、预期收益、首轮实验命令（首轮即基线轮 `it-000-baseline`） |
-| `iterations/it-NNN.md` | ⑦ 每轮迭代记录（`it-000-baseline` = J3 基线归因，字段 3 / 6 / 8 填「—（基线）」；其余轮承载 J4→J5→J6 微循环） | 字段顺序见下 |
+| `iterations/it-NNN.md` | ⑦ 每轮迭代记录（**基线轮 = 场景内最近一次 J3 基线轮，含回边重新归因轮**：字段 7 / 8 填「—（基线）」，字段 3 初始基线填「—」、回边新基线记配置变更（无代码 diff）；**字段 6 填基线实测值**——按 [docs/02 §6](../docs/02-ascend-diagnosis-sop.md)「工具与指标速查 → 负载/压测」的开环口径（固定 request-rate、warmup、重复 ≥3、P50/P95/P99）测 TTFT / TPOT / Goodput，所用引擎配置须在该轮字段 5 可复现；基线轮 `iterations[].decision` 填 `keep`、`direction` 可省略（人读字段 7 记「—（基线）」）；`it-000-baseline.md` **永不覆盖**；其余轮承载 J4→J5→J6 微循环，字段 6 须写明分母轮次（如 `相对 it-000` / `相对 it-00N`）） | 字段顺序见下 |
 | `state.json` | ⑧ 轻量机器可读状态 | 字段清单见下 |
 | `summary.md` | ⑨ 收尾结论 | best 结果 / ROI 成本收益 / 反模式清单 / 有效·无效·失败方法 / 是否沉淀条目（entry-id）/**文档缺口清单**（`V1..Vn`：现象 + 实证 + 回写位置 + 已回写/待回写；纪律见 [docs/07](07-doc-writeback-and-merge.md)） |
 
 > **分工原则**：`00-probe.md` 的机器档案 = **机器「有什么」**（相对稳定，换机 / 换版本才变）；`04-freeze-and-gate.md` = **本次实验「冻结在什么」**（每次实验核对并记录**实际**指纹，须与机器档案一致，不一致要记原因）；`01-triage.md` 是 **J1 的前置闸门**（无定位卡不进 J1 / J4 / J5）。
 
-> **J5 任务书落点**：`workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`（按 [任务书模板](../templates/task-spec-template.md) 填写；**附属交付**，不占 9 项名额，随对应 `it-NNN` 归档）。[PMR 模板](../templates/pmr-log-template.md) 是 `iterations/it-NNN.md` 的**内容骨架**（Predict / Measure / Review 对应字段 1~2 / 5~6 / 10），**不另建文件**。
+> **J5 任务书落点**：`workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`（按 [任务书模板](../templates/task-spec-template.md) 填写；**附属交付**，不占 9 项名额，随对应 `it-NNN` 归档）。[PMR 模板](../templates/pmr-log-template.md) 是 `iterations/it-NNN.md` 的**叙述骨架**（Predict / Measure / Review 只定叙事顺序；**必填字段以本文件字段表为准**，含字段 3 / 4 / 7 / 8 / 9 / 10），**不另建文件**。**旧场景**若已用 `iterations/it-NNN.md` 承担基线，视同基线轮、不强制改名，但**字段 6 仍须补基线实测值**。
 
 **`iterations/it-NNN.md` 字段顺序（逐轮，按序记录）**：
 
@@ -181,7 +181,9 @@
   "methods": { "effective": [], "ineffective": [], "failed": [] },
   "frontier": "<下一轮待探索假设>",
   "hypotheses": ["<待验证假设>"],
-  "stop_reason": "achieved|budget_exhausted|physically_infeasible",
+  "budget": { "max_iterations": 10, "spent_iterations": 0, "max_card_hours": null, "spent_card_hours": 0.0 },
+  "baseline_iteration": "it-000-baseline",
+  "stop_reason": null,
   "resume_from": "<阶段@台账文件，如 J5@04-freeze-and-gate.md>",
   "blocked_on": null
 }
@@ -191,6 +193,10 @@
 | :--- | :--- |
 | `resume_from` | **断点续跑入口**：下一动作（阶段 + 台账文件）；每轮 loop 结束与每阶段切换后同步更新，接手者据此恢复现场，不重跑已过门禁的阶段 |
 | `blocked_on` | **人机等待**：非阻塞为 `null`；阻塞时为 `{"reason": "review|permission|input|slo", "what": "<缺什么，要谁给>", "asked_at": "<YYYY-MM-DD>"}`。非 `null` 期间不得重复重试同一动作（`permission` / `input` / `slo` 见 [docs/06 §7](../docs/06-bottleneck-triage.md) 升级四类原因；`review` 指 [AGENTS.md §6](../AGENTS.md) 的方案评审与门禁闸门） |
+| `budget` | **预算上限与已用量**：`max_*` 为 `null` 表示不限。**口径**：`spent_iterations` 按 `iterations/` 轮数累计（**含 `it-000` 与回边轮**），与 [docs/06 §7](../docs/06-bottleneck-triage.md) 的 J0 熔断轮数（R1~R3）**互不相干**；`spent_card_hours = Σ(本轮墙钟小时 × 占用卡数)`（**占用卡数 = `00-probe.md` 契约分配卡列表**；实际启动更少时按实际启动数计并在 `it-NNN` 注明；**不按容器内 `npu-smi` 全卡数**），**不得**直接累加 `it-NNN` 字段 9 的估计值；`max_iterations` 默认 10、可由架构师在 `02-scope.md` 调整。**轮末**更新，触达任一上限即停并置 `stop_reason="budget_exhausted"` |
+| `baseline_iteration` | **当前生效的分母轮次**：最近一次 J3 基线轮（**含未变更配置的重新归因轮**），由 Agent 在新建基线轮的同一轮更新；**与 `it-NNN` 字段 6 的分母标注冲突时以字段 6 为准并回改本字段**；旧场景按实际基线轮填写，不套默认值 |
+| `best_metric` | **最后一次 `decision=keep` 的变更轮 + 指标值**（`metric` 记 SLO 主指标）；**基线轮不参与 A/B 判定，初始取值即 `baseline_iteration`**；轨道 A 按变更的相应档位判（**N/A 仅限 `gates/README` 定级门禁路径判定为无相应档位**；有档位但未测/未过不得记 N/A，依据记入 `it-NNN` 字段 6）；**尚无变更轮的 keep 时取 `baseline_iteration`**；失败轮即使实测更优也不得写入。**回退目标一律用它**——它是「最后一次通过的正确代码点」，不是「历史最佳指标」 |
+| `stop_reason` | 运行中为 `null`；终止时取 `achieved` / `budget_exhausted` / `physically_infeasible`（`blocked_on` 非 `null` 属等待，不算终止） |
 
 ---
 
@@ -215,8 +221,8 @@
 
 1. **每场景独立一套 `workspace/<scenario-id>/{source,optimized,ledger}`**：`source/` 与 `optimized/` 按场景隔离，台账按 `scenario-id` 隔离；**场景之间可并发，互不污染**。
 2. **严禁跨场景写对方目录**：只读自己的 `workspace/<scenario-id>/`，避免并发写同一份 `source/` / `optimized/` / `ledger/`。
-3. **唯一共享是 `workspace/_shared/calibration.md`**：`P_eff` / `BW_eff` / α / β / 锁频命令 / 配套版本按 `<模型>@<硬件>` 分节，所有场景只读复用；**只追加新分节，避免并发写同一段**；**同一 `<模型>@<硬件>` 分节由持卡人独占更新，场景不得并行写同 key**；复测由持卡人更新。
+3. **唯一共享是 `workspace/_shared/calibration.md`**：`P_eff` / `BW_eff` / α / β / 锁频命令 / 配套版本按 `<硬件>@<CANN+驱动+image_id>@<精度>` 分节（**`image_id` 取前 12 位**，不含模型——校准值是硬件属性），所有场景只读复用；**只追加新分节，避免并发写同一段**；**同一分节由持卡人独占更新，场景不得并行写同 key**；复测由持卡人更新。
 
 ### 4.3 workspace 不入库说明
 
-`workspace/` 整体**不入库、暂不建 git**（与 `repos/` 的克隆仓策略相同，仅保留占位）；需要落库的内容以**条目 md**（`cases/<entry-id>.md`）形态沉淀；补丁与 profiling 留 `workspace/<scenario-id>/ledger/patches/` 与 `workspace/<scenario-id>/ledger/profiling/`（均不入库）。
+`workspace/` 整体**不入库、暂不建 git**（与 `repos/` 的克隆仓策略相同，仅保留占位）；需要落库的内容以**条目 md**（`cases/<entry-id>.md`）形态沉淀；补丁、任务书与 profiling 分别留 `workspace/<scenario-id>/ledger/patches/`、`workspace/<scenario-id>/ledger/specs/`、`workspace/<scenario-id>/ledger/profiling/<triage-NN | it-NNN>/`（均不入库）。
