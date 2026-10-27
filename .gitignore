@@ -7,14 +7,8 @@
 # 工作区：源码/优化后/台账，不入版本控制
 /workspace/
 
-# === 技能目录（Agent Skills 规范：平铺；仅白名单技能入库）===
-/.agents/skills/*
-!/.agents/skills/README.md
-!/.agents/skills/evalscope/
-!/.agents/skills/kl-consistency-test/
-!/.agents/skills/mooncake-api/
-!/.agents/skills/mooncake-troubleshoot/
-!/.agents/skills/debug-distributed-hang/
+# === 技能目录（所有技能入库，忽略内部同步标记缓存）===
+.agents/skills/.origins/
 
 # === 技能同步缓存 ===
 /.cache/

@@ -54,7 +54,7 @@
 | `workspace/` | **工作区（不入库）**：`<scenario-id>/`（一个优化场景一份：`source/` / `optimized/` / `ledger/`）+ `_shared/calibration.md` | 每场景一份、自包含、并发安全 |
 | [scripts/](scripts/) | `manage_repos.sh` / `sync_ascend_skills.sh` | 源码与技能管理 |
 | [cases/](cases/) | **案例库（入库）**：条目 `cases/<entry-id>.md` + 索引 `cases/index.md` | 条目可被多场景引用；过程台账在 `workspace/<scenario-id>/ledger/` |
-| [.agents/skills/](.agents/skills/) | **第三方技能（平铺）**：5 个随仓库跟踪（白名单见 [.gitignore](.gitignore)）+ 190 个同步而来（共 195 个技能目录）、不入库 | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
+| [.agents/skills/](.agents/skills/) | **第三方与原生技能（平铺）**：共 195 个技能目录全部纳入版本库跟踪，支持离线开箱即用 | 路由与昇腾相关性评估见 [AGENTS.md §7](AGENTS.md) |
 
 ## 源码仓挂载（manage_repos.sh）
 
@@ -69,7 +69,7 @@
 
 `scripts/sync_ascend_skills.sh --category all` 按 **13 仓 / 21 条 allowlist**（开发 10 / 运维 9 / 门禁 2）发现并同步 SKILL.md 技能，**平铺**到 `.agents/skills/<skill-name>/`（不入库）。
 
-- `.agents/skills/` 平铺落点不入库（白名单见 [.gitignore](.gitignore)）：**5 个技能随仓库跟踪**，其余 190 个同步而来、每次同步重新生成（共 195 个技能目录）。
+- `.agents/skills/` 平铺落点全量入库：共 195 个技能目录随仓库版本化跟踪，开箱即用；日常可用 `sync_ascend_skills.sh` 更新或校验漂移。
 - `--list` 离线查看源表（url/branch 已联网核验，勿改分支）；`--only <origin>` 定向重同步。
 
 ## 文档导航

@@ -1,0 +1,150 @@
+[
+    {
+        "id": 0,
+        "name": "aclnnRopeWithSinCosCache",
+        "aclnn_name": "RopeWithSinCosCache",
+        "version": "v2.1",
+        "expected_error_msg": null,
+        "api": "pytorch",
+        "api_type": "executor_function_ascend_rope_with_sin_cos_cache",
+        "aclnn_api_type": "aclnn_function",
+        "backward": false,
+        "standard": {
+            "acc": {
+                "single_bm": {
+                    "type": "vector_fused"
+                }
+            },
+            "perf": "not_key"
+        },
+        "outputs": null,
+        "inputs": [
+            {
+                "name": "positions",
+                "type": "tensor",
+                "required": true,
+                "dtype": "int64",
+                "shape": [
+                    7
+                ],
+                "range_values": [
+                    -1,
+                    142
+                ],
+                "backward": false,
+                "align_32B": null
+            },
+            {
+                "name": "queryIn",
+                "type": "tensor",
+                "required": true,
+                "dtype": "fp16",
+                "shape": [
+                    7,
+                    256
+                ],
+                "range_values": [
+                    -5,
+                    5
+                ],
+                "backward": false,
+                "align_32B": null
+            },
+            {
+                "name": "keyIn",
+                "type": "tensor",
+                "required": true,
+                "dtype": "fp16",
+                "shape": [
+                    7,
+                    704
+                ],
+                "range_values": [
+                    -5,
+                    5
+                ],
+                "backward": false,
+                "align_32B": null
+            },
+            {
+                "name": "cosSinCache",
+                "type": "tensor",
+                "required": true,
+                "dtype": "fp16",
+                "shape": [
+                    142,
+                    32
+                ],
+                "range_values": [
+                    -5,
+                    5
+                ],
+                "backward": false,
+                "align_32B": null
+            },
+            [
+                {
+                    "name": "mropeSection",
+                    "type": "attrs",
+                    "required": false,
+                    "dtype": "int",
+                    "shape": null,
+                    "range_values": 0,
+                    "backward": false,
+                    "align_32B": null
+                },
+                {
+                    "name": "mropeSection",
+                    "type": "attrs",
+                    "required": false,
+                    "dtype": "int",
+                    "shape": null,
+                    "range_values": 0,
+                    "backward": false,
+                    "align_32B": null
+                },
+                {
+                    "name": "mropeSection",
+                    "type": "attrs",
+                    "required": false,
+                    "dtype": "int",
+                    "shape": null,
+                    "range_values": 0,
+                    "backward": false,
+                    "align_32B": null
+                }
+            ],
+            {
+                "name": "headSize",
+                "type": "attr",
+                "required": false,
+                "dtype": "int",
+                "shape": null,
+                "range_values": [
+                    32
+                ],
+                "backward": false,
+                "align_32B": null
+            },
+            {
+                "name": "isNeoxStyle",
+                "type": "attr",
+                "required": true,
+                "dtype": "bool",
+                "shape": null,
+                "range_values": true,
+                "backward": false,
+                "align_32B": null
+            }
+        ],
+        "acl_json": "",
+        "method_inputs": null,
+        "tensor_input": null,
+        "save_name": null,
+        "uuid": null,
+        "downloaded": false,
+        "is_boundary": true,
+        "xrun_cs_name": null,
+        "xrun_data": null
+    }
+]

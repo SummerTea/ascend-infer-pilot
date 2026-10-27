@@ -1,0 +1,52 @@
+{
+  "batch_name": "qwen_series_perf_20260622",
+  "infra": {
+    "ssh_host": "npu-host",
+    "xllm_container": "xllm-runtime",
+    "evalscope_container": "evalscope-client",
+    "api_url": "http://xllm-runtime:18039/v1",
+    "reference_script": "/workspace/xllm/examples/start_server.sh",
+    "mtp_export_tool": "/workspace/xllm/tools/export_mtp.py"
+  },
+  "common": {
+    "xllm_bin": "/workspace/xllm/build/xllm/core/server/xllm",
+    "start_port": 18039,
+    "model_dir": "/models/",
+    "parallel_list": "1,2,4",
+    "number": 4,
+    "warmup_num": 2,
+    "input_tokens": 2048,
+    "output_tokens": 2048,
+    "num_speculative_tokens": 3,
+    "max_memory_utilization": 0.75,
+    "block_size": 128,
+    "communication_backend": "lccl",
+    "enable_prefix_cache": true,
+    "enable_chunked_prefill": true,
+    "enable_schedule_overlap": true,
+    "enable_graph": true,
+    "enable_shm": true
+  },
+  "models": [
+    {
+      "model_name": "Qwen3.5-27B",
+      "nnodes": 2,
+      "mtp": true
+    },
+    {
+      "model_name": "Qwen3.5-35B-A3B",
+      "nnodes": 2,
+      "mtp": true
+    },
+    {
+      "model_name": "Qwen3.6-27B",
+      "nnodes": 2,
+      "mtp": true
+    },
+    {
+      "model_name": "Qwen3.5-4B",
+      "nnodes": 1,
+      "mtp": false
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{{ header }}
+{% for op in graph_builder_ops if op not in skip_ops %}
+GraphNode &GraphBuilder::AddNode(const std::vector<std::string> &inputs, const atb::infer::{{ op }} &param)
+{
+    return AddNodeByParamType(inputs, param);
+}
+{% endfor %}

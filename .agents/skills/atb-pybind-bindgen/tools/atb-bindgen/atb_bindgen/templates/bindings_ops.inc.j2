@@ -1,0 +1,60 @@
+{# Single operator param binding block #}
+{% set s = struct %}
+{% set handle = s.name | lower | replace('param', '') %}
+py::class_<{{ s.name }}>{% if s.nested_enums or s.nested_structs %} {{ handle }}{% endif %}(m, "{{ s.name }}")
+{% for enum in s.nested_enums %}
+    py::enum_<{{ s.name }}::{{ enum.name }}>({% if s.nested_enums or s.nested_structs %}{{ handle }}{% else %}m{% endif %}, "{{ enum.name }}")
+    {%- for val in enum.values %}
+        .value("{{ val.name }}", {{ s.name }}::{{ enum.name }}::{{ val.name }})
+    {%- endfor %};
+{% endfor %}
+{% for nested in s.nested_structs %}
+    py::class_<{{ s.name }}::{{ nested.name }}>({% if s.nested_enums or s.nested_structs %}{{ handle }}{% else %}m{% endif %}, "{{ nested.name }}")
+        .def(py::init<{% for f in nested.fields %}{{ f.cpp_type }}{% if not loop.last %}, {% endif %}{% endfor %}>(),
+        {%- for f in nested.fields %}
+             py::arg("{{ f.name | snake }}") = {{ default_value(f) }}{% if not loop.last %},{% endif %}
+        {%- endfor %})
+        {%- for f in nested.fields %}
+        .def_readwrite("{{ f.name | snake }}", &{{ s.name }}::{{ nested.name }}::{{ f.name }})
+        {%- endfor %};
+{% endfor %}
+{% set init_fields = s.fields %}
+{% set init_override = config.init_overrides.get(s.name, {}) %}
+{% if init_override.get('init_style') == 'svector_lambda' %}
+    .def(py::init([](const std::vector<int64_t> &{{ init_override.get('svector_field', 'axes') }}) {
+             {{ s.name }} param;
+             AddElements({{ init_override.get('svector_field', 'axes') }}, param.{{ init_override.get('svector_field', 'axes') }});
+             return param;
+             }),
+         py::arg("{{ init_override.get('svector_field', 'axes') | snake }}") = py::list())
+{% else %}
+{% if init_fields %}
+    .def(py::init<{% for f in init_fields %}{{ f.cpp_type }}{% if not loop.last %}, {% endif %}{% endfor %}>(),
+         {%- for f in init_fields %}
+         py::arg("{{ f.name | snake }}") = {{ default_value(f) }}{% if not loop.last %},{% endif %}
+         {%- endfor %})
+{% else %}
+    .def(py::init<>())
+{% endif %}
+{% endif %}
+    {%- for f in s.fields %}
+    {%- if binding_mode(f) == 'svector_property' %}
+    .def_property(
+        "{{ f.name | snake }}",
+        []({{ s.name }} &param) -> std::vector<{{ f.svector_elem }}> {
+            std::vector<{{ f.svector_elem }}> vec;
+            vec.resize(param.{{ f.name }}.size());
+            for (size_t i = 0; i < param.{{ f.name }}.size(); i++) {
+                vec.at(i) = param.{{ f.name }}.at(i);
+            }
+            return vec;
+        },
+        []({{ s.name }} &param, const std::vector<{{ f.svector_elem }}> &vals) {
+            param.{{ f.name }}.clear();
+            AddElements(vals, param.{{ f.name }});
+        })
+    {%- else %}
+    .def_readwrite("{{ f.name | snake }}", &{{ s.name }}::{{ f.name }})
+    {%- endif %}
+    {%- endfor %}
+    .def("__repr__", [](const {{ s.name }} &param) { return "{{ s.name }}: " + OpParamToJson(param).dump(); });

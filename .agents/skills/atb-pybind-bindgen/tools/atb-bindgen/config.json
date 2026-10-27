@@ -1,0 +1,115 @@
+{
+  "header": "include/atb/infer_op_params.h",
+  "output_dir": "src/torch_atb/",
+  "test_output_dir": "tests/apitest/torch_atb_test/op_test/",
+  "op_param_test_file": "tests/apitest/torch_atb_test/op_test/op_param_test.py",
+
+  "whitelist": [
+    "LayerNormParam", "ElewiseParam", "LinearParam", "SoftmaxParam",
+    "SelfAttentionParam", "PagedAttentionParam", "RopeParam", "SplitParam",
+    "GatherParam", "ActivationParam", "RmsNormParam", "AllGatherParam",
+    "AsStridedParam", "CumsumParam", "DynamicNTKParam", "MultinomialParam",
+    "ConcatParam", "SliceParam", "TransposeParam", "GatingParam",
+    "ReshapeAndCacheParam", "FillParam", "RazorFusionAttentionParam",
+    "AllReduceParam", "BroadcastParam", "ReduceScatterParam",
+    "ReduceScatterVParam", "FaUpdateParam", "LinearParallelParam",
+    "LinearSparseParam", "RelayAttentionParam", "TopkToppSamplingParam",
+    "AllToAllParam", "RingMLAParam", "GraphParam", "IndexAddParam", "WhereParam"
+  ],
+
+  "operation_ops": [
+    "LayerNormParam", "ElewiseParam", "LinearParam", "SoftmaxParam",
+    "SelfAttentionParam", "PagedAttentionParam", "RopeParam", "SplitParam",
+    "GatherParam", "ActivationParam", "RmsNormParam", "AllGatherParam",
+    "AsStridedParam", "CumsumParam", "DynamicNTKParam", "MultinomialParam",
+    "ConcatParam", "SliceParam", "TransposeParam", "GatingParam",
+    "ReshapeAndCacheParam", "FillParam", "RazorFusionAttentionParam",
+    "AllReduceParam", "BroadcastParam", "ReduceScatterParam",
+    "ReduceScatterVParam", "FaUpdateParam", "LinearParallelParam",
+    "LinearSparseParam", "RelayAttentionParam", "TopkToppSamplingParam",
+    "AllToAllParam", "RingMLAParam", "GraphParam", "IndexAddParam", "WhereParam"
+  ],
+
+  "graph_builder_ops": [
+    "LayerNormParam", "ElewiseParam", "LinearParam", "SoftmaxParam",
+    "SelfAttentionParam", "RopeParam", "SplitParam",
+    "GatherParam", "ActivationParam", "RmsNormParam", "AllGatherParam",
+    "AsStridedParam", "CumsumParam", "DynamicNTKParam", "MultinomialParam",
+    "ConcatParam", "SliceParam", "TransposeParam", "GatingParam",
+    "ReshapeAndCacheParam", "FillParam", "RazorFusionAttentionParam",
+    "AllReduceParam", "BroadcastParam", "ReduceScatterParam",
+    "ReduceScatterVParam", "LinearParallelParam",
+    "LinearSparseParam", "RelayAttentionParam", "TopkToppSamplingParam",
+    "AllToAllParam", "RingMLAParam", "IndexAddParam", "WhereParam"
+  ],
+
+  "skip_ops_in_graphbuilder": ["GraphParam", "PagedAttentionParam", "FaUpdateParam"],
+
+  "external_structs": {
+    "GraphParam": "atb::GraphParam"
+  },
+
+  "external_enums": {
+    "aclDataType": "static_from_bindings",
+    "aclFormat": "static_from_bindings"
+  },
+
+  "namespace_enums": [
+    "InputLayout", "QuantType", "DynamicQuantType", "ActivationType", "CommMode"
+  ],
+
+  "name_overrides": {},
+
+  "field_overrides": {
+    "SoftmaxParam.axes": { "binding": "svector_property_only" },
+    "AsStridedParam.size": { "binding": "svector_property_only" },
+    "AsStridedParam.stride": { "binding": "svector_property_only" },
+    "AsStridedParam.offset": { "binding": "svector_property_only" }
+  },
+
+  "init_overrides": {
+    "AsStridedParam": { "init_style": "svector_lambda", "svector_field": "size" },
+    "SoftmaxParam": { "init_style": "svector_lambda", "svector_field": "axes" },
+    "LayerNormParam": { "init_style": "preserve" },
+    "ElewiseParam": { "init_style": "preserve" },
+    "LinearParam": { "init_style": "preserve" },
+    "SelfAttentionParam": { "init_style": "preserve" },
+    "PagedAttentionParam": { "init_style": "preserve" },
+    "RmsNormParam": { "init_style": "preserve" },
+    "AllGatherParam": { "init_style": "preserve" },
+    "AllReduceParam": { "init_style": "preserve" },
+    "BroadcastParam": { "init_style": "preserve" },
+    "ReduceScatterParam": { "init_style": "preserve" },
+    "ReduceScatterVParam": { "init_style": "preserve" },
+    "LinearParallelParam": { "init_style": "preserve" },
+    "RelayAttentionParam": { "init_style": "preserve" },
+    "RazorFusionAttentionParam": { "init_style": "preserve" },
+    "RingMLAParam": { "init_style": "preserve" },
+    "TopkToppSamplingParam": { "init_style": "preserve" },
+    "AllToAllParam": { "init_style": "preserve" },
+    "FaUpdateParam": { "init_style": "preserve" },
+    "ActivationParam": { "init_style": "preserve" },
+    "GatingParam": { "init_style": "preserve" },
+    "LinearSparseParam": { "init_style": "preserve" }
+  },
+
+  "opaque_pointer_types": ["HcclComm"],
+
+  "golden_mappings": {
+    "LayerNormParam": { "category": "torch_builtin", "torch_ref": "torch.nn.LayerNorm", "inputs": ["x", "gamma", "beta"] },
+    "SoftmaxParam": { "category": "torch_builtin", "torch_ref": "torch.nn.Softmax", "inputs": ["x"], "dim_from": "axes" },
+    "RmsNormParam": { "category": "torch_compose", "torch_ref": "rms_norm_compose", "inputs": ["x", "gamma"] },
+    "SplitParam": { "category": "torch_builtin", "torch_ref": "torch.chunk", "inputs": ["x"] },
+    "ConcatParam": { "category": "torch_builtin", "torch_ref": "torch.cat", "inputs": ["tensors"] },
+    "GatherParam": { "category": "torch_builtin", "torch_ref": "torch.gather", "inputs": ["x", "index"] },
+    "ActivationParam": { "category": "torch_builtin", "torch_ref": "torch.nn.functional", "type_mapping": "activation_type" },
+    "TransposeParam": { "category": "torch_builtin", "torch_ref": "torch.permute", "inputs": ["x"] },
+    "ElewiseParam": { "category": "torch_builtin", "torch_ref": "torch", "type_mapping": "elewise_type" },
+    "LinearParam": { "category": "torch_compose", "torch_ref": "F.linear", "inputs": ["x", "weight", "bias"] },
+    "AllGatherParam": { "category": "comm_skip" },
+    "AllReduceParam": { "category": "comm_skip" },
+    "SelfAttentionParam": { "category": "skip_npu" },
+    "IndexAddParam": { "category": "torch_compose", "torch_ref": "torch.index_add_", "inputs": ["var", "indices", "updates", "alpha"] },
+    "WhereParam": { "category": "torch_compose", "torch_ref": "torch.where", "inputs": ["cond", "x", "y"] }
+  }
+}

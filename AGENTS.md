@@ -10,7 +10,7 @@
 | [docs/](docs/) | 方法论主文：J0→J6 阶段、诊断 SOP、技能选型、硬件校准 | 动手前先读对应阶段锚点 |
 | [repos/](repos/) | 只读参考底座 `refs/` + 清单 `manifest.yaml` | J1.5 盘点 / J3 归因 / J4 参考复用 |
 | `workspace/` | **不入库**：`<scenario-id>/`（`source/` + `optimized/` + `ledger/`）+ `_shared/calibration.md` | J4/J5 落点 / J6 过程留痕 |
-| [.agents/skills/](.agents/skills/) | 第三方技能（平铺）：5 个入库 + 190 个同步技能 / 共 195 个技能目录（不入库） | 按 §7 技能路由表取用 |
+| [.agents/skills/](.agents/skills/) | 昇腾全量技能（平铺）：共 195 个技能目录（全部入库，开箱即用） | 按 §7 技能路由表取用 |
 
 ## 1.0 J0 定焦：先收窄再冻结
 
@@ -139,7 +139,7 @@
 
 **第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径，同步时仅归一化 frontmatter `name` 为目录名、正文不改；同名近似版本会被去重、实质不同则改名并存，见 `.agents/skills/README.md`），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §2 来源仓昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
-- **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；入库仅 5 个 + README（白名单见 `.gitignore`），其余 190 个同步而来、不入库（共 195 个技能目录）。
+- **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；共 195 个技能目录全部纳入版本库跟踪，支持离线开箱即用。
 - **算子开发路线强制**：`AscendC` > `TileLang` > `PyPTO`/`CATLASS`；**Triton / Triton-Ascend 不在实现路线**（脚本 denylist 排除）。
 - **路由细则**（J0→J6 各环节该用哪些技能 + 重复对优先选用）：见 `.agents/skills/README.md`。
 - **`docs/` 与本文件的回写纪律见 §10**——执行中发现的流程短板必须回写，且回写本身受鲁棒性硬约束。

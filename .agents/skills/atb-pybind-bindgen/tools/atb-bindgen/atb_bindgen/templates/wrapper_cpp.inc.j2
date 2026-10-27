@@ -1,0 +1,7 @@
+{{ header }}
+{% for op in operation_ops %}
+OperationWrapper::OperationWrapper(const {{ op if op == 'GraphParam' else op }} &param)
+{
+    CreateOpUniquePtr(param);
+}
+{% endfor %}
