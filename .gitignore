@@ -33,3 +33,6 @@ __pycache__/
 .venv/
 .codegraph/
 *.log
+
+# === deepwork 会话状态（本地，不入库；.ignore 反向放行给 OpenCode 读取）===
+.slim/deepwork/

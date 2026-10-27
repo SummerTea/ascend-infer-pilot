@@ -45,10 +45,10 @@ flowchart LR
 | **J1 目标定义** | `workspace/<scenario-id>/ledger/02-scope.md`（目标四输入） |
 | **J1.5 引擎能力盘点** | `workspace/<scenario-id>/ledger/02-scope.md` 的 **gap 段** |
 | **J2 物理上限核算** | `workspace/<scenario-id>/ledger/03-baseline-ledger.md` |
-| **J3 基线归因** | `workspace/<scenario-id>/ledger/iterations/it-NNN.md`（前置：`00-probe.md` 的机器档案与齐备性检查） |
+| **J3 基线归因** | `workspace/<scenario-id>/ledger/iterations/it-000-baseline.md`（基线轮；无改动与相对收益，字段 3 / 6 / 8 填「—（基线）」；前置：`00-probe.md` 的机器档案与齐备性检查） |
 | **J4 干预决策** | 产出落 `workspace/<scenario-id>/optimized/` 或 `source/` |
-| **J5 任务书交付** | 任务书（[模板](../templates/task-spec-template.md)）+ 产出在 `workspace/<scenario-id>/optimized/` |
-| **J6 双轨门禁** | `04-freeze-and-gate.md` + `summary.md` + 沉淀条目 `cases/<entry-id>.md` |
+| **J5 任务书交付** | 任务书 `workspace/<scenario-id>/ledger/specs/spec-it-NNN.md`（[模板](../templates/task-spec-template.md)）+ 产出在 `workspace/<scenario-id>/optimized/` |
+| **J6 双轨门禁** | `04-freeze-and-gate.md`（loop 前创建、J6 回填验收结论）+ `summary.md` + 沉淀条目 `cases/<entry-id>.md` |
 
 ---
 

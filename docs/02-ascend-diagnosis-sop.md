@@ -199,7 +199,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 msprof op --output=/tmp/probe --application="python3 -c 'import torch, torch_npu; torch.npu.init(); torch.empty(1, device=\"npu:0\")'"   # --output / --application 等选项以本机 msprof op -h 为准，须上机核实
 ```
 
-**完成标准**：`/tmp/probe` 下生成 profile 产物且无权限/驱动报错；若失败先修权限与配套，不进入采集（Step 0.5 前置，见 §4）。
+**完成标准**：`/tmp/probe` 下生成 profile 产物且无权限/驱动报错；若失败先修权限与配套，不进入采集（Step 0.5 前置，见 §4）。若报 `Device profiling is not supported on current chip` 或 `chipType=0`，先查容器是否漏挂宿主 `/usr/local/Ascend/driver`（[硬件与引擎 §2 主机环境核对](03-ascend-hardware-and-engines.md) 的「容器起停最小参数集」段），**勿判为「卡不支持」**。
 
 ### 2. 端到端采集（L2 时序）
 
@@ -222,6 +222,8 @@ msprof op --output=<dir> --application="python3 benchmark_op.py"   # 亦可位�
 产出五表：**Kernel**（Top-N 主核）、**通信重叠**（HCCL kernel 与计算轨道重叠度）、**融合模式**（融合算子是否生效）、**下发效率**（Host 下发 vs NPU 执行间隙）、**内存效率**（有效带宽与 `实际字节/bytes_min` 比值）。
 
 **完成标准**：五表齐备，**过滤阈值 = 占比 ≥ 1%**（低于 1% 的算子不进入归因）；Top-N 主核累计覆盖总耗时 ≥ 80% 才有归因基础。
+
+**结构化落盘（归因证据的唯一形态）**：五表必须导出为**机器可读文件**（CSV / JSON）到 `workspace/<scenario-id>/ledger/profiling/<triage-NN | it-NNN>/`（J0 定焦用 `triage-NN`，迭代用 `it-NNN`），字段含算子名 / 占比 / 耗时 / 有效带宽 / `实际字节/bytes_min` 等判定列；MindStudio Insight 仅作人工核对。**禁止只留 GUI 截图或肉眼读数**——Agent 必须能从产物自行复算判据，否则该轮归因不成立。
 
 ### 5. AICPU 排查
 

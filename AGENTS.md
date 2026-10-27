@@ -20,7 +20,7 @@
 
 **粗/精账本**：J0 用**粗口径** `P_eff≈α·P_peak` / `BW_eff≈β·BW_peak`（α≈0.65 / β≈0.70，**只判「算还是读」，不得用于 J6 门禁**）；定焦后 J2 只对焦点维度做**精校准**。
 
-**硬出口（四条）**：占比 ≥20% / `msprof` 证据 / 明确候选阶梯 / 收益上限 ≥ 目标 gap 50%；**全满足才可进 J1/J4/J5**，否则回 R1/R2 换手段。**无定位卡不得进入 J1 / J4 / J5**（硬约束）。
+**硬出口**：占比 / `msprof` 证据 / 明确候选阶梯 / 收益上限**四条件全满足**才可进 J1/J4/J5，否则回 R1/R2 换手段——**条件与阈值的唯一权威见 [docs/06 §6](docs/06-bottleneck-triage.md)**。**无定位卡不得进入 J1 / J4 / J5**（硬约束）。
 
 **熔断**：R1~R3 **≤3 轮**（每轮记「学到什么 + 下轮换什么手段」），超限**升级给人**；「各段均衡且接近上限」**或 top-1 占比 <20% 的分布型** → 转**约束点分支**（容量/并行/精度/调度）。
 细则唯一权威：[docs/06 §2/§3/§4/§6/§7/§8](docs/06-bottleneck-triage.md)。
@@ -30,7 +30,7 @@
 **Step 0 起手**：
 
 1. **定 `scenario-id`**：命名式 `<卡数>x<硬件>-<模型>-<主攻>`，例 `2x910B-dsv41-flash-rocm-net`（与 `cases/<entry-id>.md` 的"来源场景"字段同名引用）。
-2. **备料**：`bash scripts/sync_ascend_skills.sh --category all`（第三方技能）+ `bash scripts/manage_repos.sh clone --targets --scenario <scenario-id>`（目标源码进 `workspace/<scenario-id>/source/`；参考底座 `bash scripts/manage_repos.sh clone --refs` 进 `repos/refs/`）。
+2. **备料**：`bash scripts/sync_ascend_skills.sh --category all`（第三方技能）+ `bash scripts/manage_repos.sh clone --targets --scenario <scenario-id>`（目标源码进 `workspace/<scenario-id>/source/`；参考底座 `bash scripts/manage_repos.sh clone --refs` 进 `repos/refs/`）+ **模型配置快照** `workspace/<scenario-id>/model/`（只取 config 与代码、pin revision、不含权重，命令见 [docs/03 §2](docs/03-ascend-hardware-and-engines.md)）。
 3. **建台账并从 `00-probe.md` 起**（先补机器档案与齐备性 → 再做 J0 定焦 `01-triage.md`）：`workspace/<scenario-id>/ledger/` 按 §1.5 顺序推进。
 
 首次接手先读 [README.md](README.md) 的快速启动与**任务类型速查**（据任务选定入口阶段）；本文件给出完整阶段链 J0→J6，**各阶段的出口条件不可跳**——入口可依任务速查选，出口条件一律从严。
@@ -57,22 +57,18 @@
 **顺序（每场景按序执行，可复制）**：
 
 ```
-00-probe → 01-triage → 02-scope → 03-baseline-ledger → 04-freeze-and-gate → 05-bootstrap → loop: iterations/it-NNN → summary.md
+00-probe → 01-triage → 02-scope → 03-baseline-ledger → 04-freeze-and-gate → 05-bootstrap → loop: iterations/it-000-baseline（J3 基线）→ it-001..N（J4→J5→J6）→ summary.md
 ```
 
-> 上述为 **8 个顺序步**；**台账 9 项中的 `state.json`** 随 loop **逐轮同步维护**，故不入顺序链。
+> 上述为 **8 个顺序步**（`it-000-baseline` 只是 `iterations/it-NNN.md` 的首个实例，台账仍 9 项）；**台账 9 项中的 `state.json`** 随 loop **逐轮同步维护**，故不入顺序链。
 
-**与 §1 阶段对应**：J0→`01-triage`；J1→`02-scope`（四输入）；J1.5→`02-scope` 的 gap 段；J2→`03-baseline-ledger`；J3→`iterations/`；J4→`optimized/` 或 `source/`；J5→任务书 + `optimized/`；J6→`04-freeze-and-gate` + `summary.md` + 条目。
+**与 §1 阶段对应**：J0→`01-triage`；J1→`02-scope`（四输入）；J1.5→`02-scope` 的 gap 段；J2→`03-baseline-ledger`；J3→`iterations/it-000-baseline.md`；J4→`optimized/` 或 `source/`；J5→任务书 `ledger/specs/spec-it-NNN.md` + `optimized/`；J6→`04-freeze-and-gate`（loop 前建、J6 回填）+ `summary.md` + 条目。
 
-**loop 每轮（`iterations/it-NNN.md`）按序记录**（下列 5 条是 [docs/05 §3](docs/05-case-library-and-ledger.md) **10 个字段的无损归并**，逐项以该处为准）：
-
-1. 假设 → 对应阶梯/方法 → 改动（文件 + 关键 diff）
-2. **环境指纹**（本轮实际版本 / 锁频 / commit）
-3. `msprof` / `msprof op` 命令 + 产物路径 + 五表摘录
-4. 门禁 A/B 结果 → **结论方向（正向 / 反向 / 无变化）** → 决策（保留 / 回退 / 继续）
-5. 成本估计 → 下轮建议
+**loop 每轮（`iterations/it-NNN.md`）**：假设 → 阶梯/方法 → 改动 → **环境指纹** → `msprof` 证据 → 门禁 A/B → 结论方向 → 决策 → 成本 → 下轮建议；**10 个字段的定义与顺序唯一权威见 [docs/05 §3](docs/05-case-library-and-ledger.md)**。
 
 **停止判据**：达标即停 / 预算耗尽即停 / 物理不可达即停。**回边**：J6 未达预期 → 回 J3；阶梯失败 → 回退上一阶梯；J2 物理不可达 → 回 J1 重谈 SLO。
+
+**断点续跑（新会话接手 / 等待人工后恢复）**：先读 `state.json`——`resume_from` 是下一动作入口，`blocked_on` 非 `null` 即卡在人（`permission` / `input` / `slo` 期间**不得重复重试同一动作**，等持卡人回复后置空再续）；再读 `summary.md`（无则从最新 `iterations/it-NNN.md` 逆序读）；最后按 §1 阶段表核对出口条件。**已过门禁的阶段不重跑**。
 
 字段清单与 `state.json` schema 见 [docs/05 §3](docs/05-case-library-and-ledger.md)。
 
@@ -93,8 +89,7 @@
 ## 3. J2 双约束账本铁律
 
 - 任何「利用率低于 X%」的判定，**分母必须是本机校准的 `P_eff` / `BW_eff`**（理想大 GEMM 微基准得 `P_eff = α·P_peak`；STREAM / 大 copy 得 `BW_eff = β·BW_peak`），**禁止用理论峰值**——以理论峰值为分母会把编译器/库的正常效率损耗误判为引擎缺陷，诱发错误干预阶梯。
-- 平衡点 `B* = P_eff / BW_eff`（FLOP/Byte）：`AI > B*` → 算力受限；`AI < B*` → 访存受限；判据与下界必须与当前精度一致。
-- `MFU_eff = 理论最少 FLOPs / (T_actual × P_eff)`；`BW_util = Data Per Step / (T_actual × BW_eff)`；`P_*` / `BW_*` 用 SI 基单位（FLOP/s、B/s），TFLOPS/TB/s 须 ×10¹² 代入。
+- 平衡点 `B* = P_eff / BW_eff`（`AI > B*` → 算力受限；`AI < B*` → 访存受限）；`MFU_eff` / `BW_util` 定义与 SI 单位换算（TFLOPS/TB/s 须 ×10¹²）见 [01 §4](docs/01-pipeline-and-ledger.md)，判据与下界须与当前精度一致。
 - 校准台账见 [calibration-template.md](templates/calibration-template.md)；公式细节（`N_active` vs `N_card`、MoE 分片、Decode/Prefill 下界）见 [01](docs/01-pipeline-and-ledger.md)。
 
 ## 4. msprof 测量铁律
@@ -140,12 +135,14 @@
 | 迁移与图模式 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`CUDA→torch_npu 迁移与图模式修复` |
 | vllm-ascend 接入 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`vllm-ascend 接入与融合算子替换` |
 | 主机环境（本机事实） | 当前场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 机器档案段（**不入库**；缺失或换机/换版本时按 §9 探针命令重跑写入） |
+| 远程开发拓扑与主机契约 | [docs/03](docs/03-ascend-hardware-and-engines.md) §`Mac 驱动远程开发拓扑与主机契约`（同步纪律 / 工具清单 / 缺包与复测分级；一句话入口见 §9.1） |
 
 **第三方技能 → `.agents/skills/`**：平铺目录（Agent Skills 规范），由 [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) 同步、不入库。第三方技能为上游原文（含 NVIDIA/CUDA 口径，同步时仅归一化 frontmatter `name` 为目录名、正文不改；同名近似版本会被去重、实质不同则改名并存，见 `.agents/skills/README.md`），**昇腾相关性评估见 [docs/04](docs/04-skill-catalog-and-maintenance.md) §2 来源仓昇腾相关性评估**；执行一律以 msprof 铁律与 `docs/` 为准。
 
 - **结构**：Agent Skills 规范**平铺**（`<skill-name>/SKILL.md`），**无分类子目录**；入库仅 5 个 + README（白名单见 `.gitignore`），其余 190 个同步而来、不入库（共 195 个技能目录）。
 - **算子开发路线强制**：`AscendC` > `TileLang` > `PyPTO`/`CATLASS`；**Triton / Triton-Ascend 不在实现路线**（脚本 denylist 排除）。
 - **路由细则**（J0→J6 各环节该用哪些技能 + 重复对优先选用）：见 `.agents/skills/README.md`。
+- **`docs/` 与本文件的回写纪律见 §10**——执行中发现的流程短板必须回写，且回写本身受鲁棒性硬约束。
 
 ## 8. 脚本速用
 
@@ -153,8 +150,9 @@
 | :--- | :--- | :--- |
 | [manage_repos.sh](scripts/manage_repos.sh) | `--list [--scenario <id>]` / `clone [--targets\|--refs\|<name>\|URL] [--scenario <id>]` / `status [--scenario <id>]` / `export-patch <repo> --scenario <id>` | 目标源码（`workspace/<scenario-id>/source/`）与参考底座（`repos/refs/`）的克隆、巡检与补丁归档 |
 | [sync_ascend_skills.sh](scripts/sync_ascend_skills.sh) | `--list` / `--category {dev,ops,gate,all}` / `--only <origin>` / `--dry-run` / `--force` / `--prune` / `--report <path>` / `--update-lock` / `--verify` / `--pinned` | 按 **13 仓 / 21 条 allowlist** 平铺同步（不入库；Triton 一律排除）；`--prune` 清陈旧；`--update-lock` 写 `scripts/skills.lock`；`--verify` 检漂移 |
+| `scripts/sync_to_remote.sh`（**待真机验证后落地**；落地须附真机 `--dry-run` + 一次真实 push/pull 实证，见 [docs/07 §2](docs/07-doc-writeback-and-merge.md)，成功后删标注并改为链接） | `push` / `pull` / `--dry-run` | Mac ↔ 主机文件层同步（push 仅 `source/` `optimized/`；pull 收 profiling 与 patches；纪律见 [docs/03 §2](docs/03-ascend-hardware-and-engines.md)） |
 
-> 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），与台账 `iterations/it-NNN.md` 互为素材。
+> 单轮实验记录用 [PMR 模板](templates/pmr-log-template.md)（Predict / Measure / Review），它是台账 `iterations/it-NNN.md` 的**内容骨架**（不另建文件）。
 
 ## 9. 主机环境取证
 
@@ -176,4 +174,18 @@ df -h /data /
 nproc
 free -g
 ```
-> 完整探针（含 `msprof` / `hccl_test` / 校准前置）见 [docs/03 §2 主机环境核对](docs/03-ascend-hardware-and-engines.md)。
+> 完整探针（含 `msprof` / `hccl_test` / 校准前置）、**两端工具核验**与**契约复核**（`docker inspect`）见 [docs/03 §2 主机环境核对](docs/03-ascend-hardware-and-engines.md)。
+
+### 9.1 开发与执行拓扑（Mac 驱动）
+
+`Mac（编辑 + agent）─push source/ optimized/→ 主机 <契约根路径> ─挂载→ 容器（唯一执行环境）`
+
+1. **单向写**：push 只推 `source/` 与 `optimized/`；`ledger/` 默认只 pull 不 push（确需推时禁 `--delete` 并排除 `ledger/profiling/`、`ledger/patches/`，见 docs/03 §2）；禁止在主机或容器内直接改代码。
+2. **路径映射唯一**：映射与契约取值只写在 `00-probe.md` 的服务器侧契约段（字段见 [docs/05 §3](docs/05-case-library-and-ledger.md)），代码与脚本禁硬编码任一侧绝对路径。
+3. **同步即证据**：实验前 push 一次并留痕（sync 与镜像字段见 [docs/05 §3](docs/05-case-library-and-ledger.md)）。
+
+拓扑形态、工具清单、缺包处置与复测分级见 [docs/03 §2](docs/03-ascend-hardware-and-engines.md)。
+
+## 10. 文档回写与合入纪律（docs / AGENTS.md）
+
+执行中发现的流程短板（`V1..Vn`：命令失效 / 字段缺失 / 判据不可执行 / 分支走不通）**必须回写**，不得只在台账私存，也不得默默绕开流程自行变通。回写路径与六条合入硬约束（单一权威源 / 引用完整 / 不得静默放宽 / 向后兼容 / 一次一处 / 连带面核对）、以及 Agent 只有提议权的三类自指规则，**唯一权威见 [docs/07](docs/07-doc-writeback-and-merge.md)**。

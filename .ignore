@@ -1,0 +1,3 @@
+# deepwork 状态目录：git 忽略、OpenCode 可读
+!.slim/deepwork/
+!.slim/deepwork/**

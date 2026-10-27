@@ -37,6 +37,12 @@
 
 **主机专属事实一律见各场景台账 `workspace/<scenario-id>/ledger/00-probe.md` 的「机器档案」段（不入库）**：评测服务器 IP / SSH 端口与密钥 / 卡型 / HBM 容量 / CANN·驱动·工具版本 / 镜像名与源 / 磁盘布局与模型·数据集路径 / 配套版本组合。本文档**只保留通用探针方法与坑，不落任何本机专属值**。首次上机按序执行：
 
+**Mac 侧工具核验（本机，不进 ssh）**：
+
+```bash
+command -v rsync jq && rsync --version    # jq 为 Mac 侧硬门槛（读 state.json）
+```
+
 ```bash
 # 0) 登录评测机（SSH 端口、密钥与账号见场景台账 00-probe.md 的机器档案段）
 ssh -i <密钥> -o IdentitiesOnly=yes -p <端口> <用户>@<主机>
@@ -59,14 +65,107 @@ msprof op --output=/tmp/gemm_calib --application="python3 calib_gemm.py"
 msprof op --output=/tmp/copy_calib --application="python3 calib_copy.py"
 ```
 
+**容器起停最小参数集（主机侧；占位取值写入 `00-probe.md` 服务器侧契约段）**：
+
+```bash
+docker run -d --name pilot-<scenario> --privileged --ipc=host --shm-size=64g \
+  -v /dev/davinci<N>:/dev/davinci<N> -v /dev/davinci_manager:/dev/davinci_manager \
+  -v /dev/devmm_svm:/dev/devmm_svm -v /dev/hisi_hdc:/dev/hisi_hdc \
+  -v <宿主 driver 目录>:/usr/local/Ascend/driver \
+  -v <宿主 ascend_install.info>:/etc/ascend_install.info \
+  -v <契约根路径>:/pilot -v <共享模型目录>:/model:ro \
+  -e ASCEND_RT_VISIBLE_DEVICES=<契约分配卡列表> \
+  -w /pilot <镜像 tag> tail -f /dev/null
+```
+
+- **必须注入 `-e ASCEND_RT_VISIBLE_DEVICES=<契约分配卡列表>`**：这是本工程唯一的设备隔离机制（见下一条）；漏了容器照样起得来，但 8 卡对框架/ACL 全可见，`hccl_test` / 压测会按默认卡序跑到别人的卡上。**容器内 `npu-smi` 仍会列出全部卡，勿据此判断占用**（占用以宿主 `npu-smi info` + 契约分配卡列表为准）。
+- **镜像内通常没有 `/usr/local/Ascend/driver`，必须挂宿主 driver**：漏挂时 `msprof` 报 `Device profiling is not supported on current chip`（实为 `chipType=0` 查不到 SOC 版本），会被误判成「卡不支持」；先验 `torch.npu.get_device_name(0)`（[诊断 SOP §4](02-ascend-diagnosis-sop.md) Step 0.5 的假活环境判别）。
+- **`--privileged` 是硬前提**（本机 ascend docker runtime 不可用），代价是注入宿主全部 `/dev`；设备隔离只能靠 `ASCEND_RT_VISIBLE_DEVICES`（见本节共享机红线 3）。
+- **重建镜像后必须重建容器**（`docker rm -f pilot-<scenario>` 再 `docker run`）并重跑下面的契约复核——旧容器仍指向旧 image ID。
+
+**契约复核（容器创建后，主机侧）**：`docker inspect <容器> --format '{{json .Mounts}} {{.Image}}'` —— 挂载映射须与 `00-probe.md` 服务器侧契约段一致，`.Image` 须等于契约 image ID；`npu-smi info` 的占用须与分配卡列表一致。首次上机（容器尚未创建）跳过本步。
+
 **通用坑**：
 
 - `latest/version.cfg` **可能为空文件**——取 CANN 版本用 `cann/version.cfg` 或目录名（`cann-<version>`），勿靠 `latest/` 软链。
 - 工具（`msprof` / `msprof-analyze` / `atc` / `hccl_test` / `ascend-dmi`）**不在默认 PATH**，`command -v` 为空是正常的，先 `source /usr/local/Ascend/ascend-toolkit/set_env.sh`。
 - 宿主通常**未安装 torch / torch_npu**，评测与采集一律进 Docker 容器；`docker ps -a` / `docker images` 核对容器与镜像（镜像名与源见场景台账 00-probe.md 的机器档案段）。
 - 磁盘布局与容量以 `df -h` 实测为准（模型/数据集路径见场景台账 00-probe.md 的机器档案段）。
+- 共享机若使用 snap docker，或镜像自带 `VOLUME` 声明，宿主↔容器的共享目录可能不可见（表现为「宿主有文件、容器看不到」）；不要怀疑 scp，按场景 `00-probe.md` 的容器陷阱记录换挂载点。
 
 校准结果落 `workspace/_shared/calibration.md`（跨场景共享、不入库，按 `<模型>@<硬件>` 分节；α / β / 锁频命令 / CANN↔torch_npu↔PyTorch↔驱动配套版本）。
+
+### Mac 驱动远程开发拓扑与主机契约
+
+> 本工程的实际开发形态：**人在 Mac、agent 在 Mac、执行在远端**。本节权威限于**拓扑形态、同步纪律、工具链与复测分级**；服务器侧契约的**字段名、取值与取法一律见 [docs/05 §3](05-case-library-and-ledger.md)**，本节仅作形态示意、不复述取值规则。
+
+**三层职责**
+
+| 层 | 职责 | 只放什么 |
+| :--- | :--- | :--- |
+| **Mac** | 编辑 + agent 运行 + 仓库真身（`docs/` / `AGENTS.md` / `cases/` / 台账）+ 模型配置快照 `model/`（只读，无权重） | 代码与文档的唯一可写真身 |
+| **主机** `/home/pilot/<scenario-id>/`（形态示意，取值见 docs/05 §3） | 文件层 + docker daemon + 共享只读的模型/数据集挂载（形态说明，取值见 docs/05 §3） | 从 Mac 推下来的代码、msprof 产物、容器 |
+| **容器** `pilot-<scenario>`（同左） | **唯一执行环境**（torch_npu / CANN / msprof / atc 都在镜像内） | 无持久状态；重起即丢，产物必须落主机挂载卷 |
+
+**同步纪律（三条，违反即证据链失效）**
+
+1. **单向写**：代码与脚本只从 Mac → 主机（push）；profiling 产物与 `export-patch` 的 patch 只从主机 → Mac（pull）。**push 的范围只有 `source/` 与 `optimized/`；`ledger/` 默认只 pull 不 push**——整树 `rsync --delete` 会抹掉容器刚写的 `ledger/profiling/` 与 host 侧 `ledger/patches/`；确需推 ledger 时禁用 `--delete` 并 `--exclude 'ledger/profiling/' --exclude 'ledger/patches/'`。**`model/` 不 push**（只读快照，主机已有全量权重）。**禁止在主机或容器内直接改代码文件**——会被下次 push 覆盖且不留痕。
+2. **路径映射唯一**：Mac `workspace/<scenario-id>/<sub>/` ↔ 主机 `/home/pilot/<scenario-id>/<sub>/` ↔ 容器 `/pilot/<sub>/`，`<sub>` ∈ {`source`, `optimized`, `ledger`}；profiling 证据落 `ledger/profiling/<triage-NN | it-NNN>/`。映射只写在 `00-probe.md` 的服务器侧契约段，代码与脚本**禁止硬编码任一侧绝对路径**。
+3. **同步即证据**：每次实验前 push 一次，并在 `iterations/it-NNN.md` 的环境指纹里记 sync 时间戳与目标镜像 image ID——否则「容器里跑的是哪个版本」不可复算。
+
+**模型配置快照（Mac 侧 `workspace/<scenario-id>/model/`，只取配置与代码）**
+
+J1 特征向量、J1.5 盘点与 golden 脚本都要读模型结构，但**不需要权重**。必须 pin revision：
+
+```bash
+# HF 镜像（国内优先）；新版 CLI 为 `hf download`，命令与 flag 以本机 --help 为准
+HF_ENDPOINT=https://hf-mirror.com huggingface-cli download <repo> --revision <commit> \
+  --include '*.json' '*.py' 'tokenizer*' --local-dir workspace/<scenario-id>/model
+
+# ModelScope（国内更稳；include 语法与 flag 以本机 --help 为准）
+modelscope download --model <repo> --revision <commit> \
+  --include '*.json' '*.py' 'tokenizer*' --local_dir workspace/<scenario-id>/model
+```
+
+- **禁止把权重拖下来**：抓完 `du -sh workspace/<scenario-id>/model` 应只有数 MB；出现 `*.safetensors` / `*.bin` / `*.pt` / `*.gguf` 即视为抓错，删掉重抓。
+- **`--revision` 必填**：同一 tag 下换 `config.json` 会让 J1 特征向量与 J2 的 KV/显存账本**静默算错**，比权重漂移更难发现。
+- 落点与禁令见 [docs/05 §4.1](05-case-library-and-ledger.md)；来源（仓库@revision / glob / 落点）写进 `00-probe.md` 源码探测段。
+
+**工具清单（初始化时核验，缺失按「缺失落点」处置）**
+
+| 工具 | 位置 | 档位 | 用途 | 检查 | 缺失落点 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| ssh + 密钥 | Mac | 硬 | 唯一通道 | `ssh -V` | 系统自带 |
+| rsync | **Mac + 主机两端** | 硬 | 同步载体 | `rsync --version`（两端各跑一次） | macOS 自带版本旧，必要时 `brew install rsync`；主机侧缺则请人装 |
+| git | Mac | 硬 | 仓库与 patch | `git --version` | 系统 / brew |
+| jq | Mac | 硬 | 读 `state.json` | `jq --version` | `brew install jq` |
+| docker | 主机 | 硬 | 执行环境 | `docker ps` | 请人装 |
+| py-spy | 容器内 | 按需（瓶颈 3 下发类） | Python 侧火焰图 | 容器内 `py-spy --version` | **打新镜像**（见下） |
+| ethtool | 主机 | 按需（RoCE 跨机） | PFC / 误码探针 | `ethtool --version` | 请人装 |
+| MindStudio Insight | 人用 GUI | 可选 | 看 timeline | 人工 | Agent 不需要 |
+
+> **宿主缺系统工具**：只报缺 + 给出安装命令 + 等人装；**agent 不得自行装进 `~/.local`**（共享机状态会发散）。
+
+**缺包处置：禁止容器内临时装包**
+
+**适用范围**：本禁令只管**环境包**（CANN / torch_npu / 三方依赖）；`workspace/<scenario-id>/optimized/` 下的自研插件与 kernel 每轮从挂载卷安装或编译属**被测产物**，允许，但须在 `iterations/it-NNN.md` 记安装/编译命令与对应 commit 或 diff。**被测产物的依赖必须来自镜像**：安装用 `--no-deps`（或只编译本地扩展）；需要新的三方依赖即按缺包处置打镜像，不得借插件的 `install_requires` 把环境包装进容器。
+
+容器内 `pip install` 重起即丢，且会让「冻结指纹」与真实运行环境脱钩。缺包一律：
+
+```
+缺包 → 在主机上打新镜像（原镜像 + pip 层，新 tag）→ 记新 tag 与新 image ID
+     → 同步更新 00-probe.md 的服务器侧契约与 04-freeze-and-gate.md 的 image_id
+```
+
+**复测触发分级**：仅新增诊断工具（如 py-spy）→ 只更新契约与 image ID，**不触发**全量复测，但须同时满足三条跳过前提：① 新镜像基线按**可拉取摘要**固定：有 `RepoDigests` 时把 `docker image inspect <基线> --format '{{index .RepoDigests 0}}'` 的输出**整体**作为 `FROM` 的值（该输出已含 `name@sha256:<manifest digest>`，**不要再拼一层** `@sha256:`），无 `RepoDigests` 的本地基线先打稳定 tag 再引用——**不得**写成 `<tag>@sha256:<image ID>`（image ID 是配置摘要、不是 manifest 摘要，构建会失败并诱发「删掉 `@sha256` 退回 tag」的绕过）；② 新旧镜像内各取三项 diff：`cat /usr/local/Ascend/cann/version.cfg`、`python -c "import torch, torch_npu; print(torch.__version__, torch_npu.__version__)"`、`pip freeze`，三项全同才算版本串未变；新增包用 `--no-deps` 或 constraints 安装；③ 跳过决定与三项 diff 记入 `04-freeze-and-gate.md`。任一条不满足 → 镜像变更触及 **CANN / torch_npu / PyTorch / 驱动**，按 [docs/04 §5 B 类](04-skill-catalog-and-maintenance.md) 重跑校准与门禁。
+
+**共享机红线（他人的容器 / 数据不可动）**
+
+1. **禁止重启 docker daemon**（会杀掉他人容器）；
+2. 禁杀他人容器、禁改他人挂载；
+3. 分配卡初始化时核验未被占用（`npu-smi info`）并写入契约。**卡隔离以 `ASCEND_RT_VISIBLE_DEVICES` 为准**：框架与 ACL 系工具（含 `hccl_test` / 压测）均按它选卡，`-g` 与进程内指定不得超过分配卡数。**不要在 `--privileged` 容器里假设设备级隔离**——privileged 会注入宿主全部 `/dev`，显式 `-v /dev/davinciN` 只是卫生习惯、不构成并发保护（本机 ascend docker runtime 不可用，`--privileged` 是硬前提，见 `00-probe.md` 机器档案）。`npu-smi` 视图不等于可用（他人进程可能无可见进程名却占着显存）。
+
+> **历史布局**：`workspace/1x910B3-qwen3-8b-triage` 使用 `/home/pilot/{run,prof,models}` 平铺布局（legacy）。**两代 `/pilot` 语义不同**：旧场景 `/pilot` = `/home/pilot`，新场景 `/pilot` = `/home/pilot/<scenario-id>/`，一律以本场景 `00-probe.md` 的挂载映射为准。旧场景不强制迁移，但证据路径需如实记录。
 
 ---
 
